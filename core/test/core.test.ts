@@ -250,3 +250,14 @@ describe("figures & interaction choreography (ADR-0008)", () => {
     expect(typedHtml).toContain('class="caret"');
   });
 });
+
+describe("figure internals as nested comps (ADR-0008)", () => {
+  it("figureId/innerId compiles to a scoped selector and gates on the figure's existence", () => {
+    const s = validFixture();
+    s.scenes[0].choreography.push({ id: "inner", target: "ghost/menu", preset: "fade-up", at: { after: "scene-start", offsetMs: 100 } } as never);
+    const hits = runStaticGates(s).filter((x) => x.ruleId === "IR-REF-2");
+    expect(hits.length).toBe(1); // no figure named ghost
+    const v = validateScore(structuredClone(s));
+    expect(v.ok).toBe(true); // syntax itself is legal
+  });
+});

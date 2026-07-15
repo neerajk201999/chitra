@@ -218,7 +218,13 @@ const Stagger = z.object({
 
 export const Animation = z.object({
   id,
-  target: id, // element id, or group prefix with trailing '*' resolved by compiler
+  /** Element id; group prefix with trailing '*'; or `figureId/innerId` to
+   *  choreograph an element INSIDE a figure fragment (ADR-0008 nested comps).
+   *  Inner ids are author-defined in the fragment; unresolved selectors fail
+   *  loudly at session open (missingTargets). */
+  target: z
+    .string()
+    .regex(/^[a-z][a-z0-9-]*(\*|\/[a-z][a-z0-9-]*)?$/, "target is an element id, a group prefix ending in *, or figureId/innerId"),
   preset: presetName,
   duration: durationToken.optional(), // defaults from preset
   easing: easingToken.optional(), // defaults from preset

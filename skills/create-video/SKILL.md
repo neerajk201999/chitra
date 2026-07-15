@@ -30,7 +30,9 @@ Write `score.json` (`tier:"score"`). Consult the motion language (`docs/motion/m
 
 Style: start from a house style in `styles/` (e.g. `night.json`, `paper.json`) and adapt palette to brand. Keep palettes ≤ 2 chromatic colors + neutrals. Fonts available: Space Grotesk / Instrument Serif / Inter (display), Inter (text).
 
-Element vocabulary: `text` (textRole: display/headline/title/body/caption/kicker), `shape` (rect/line/circle/gradient-field), `image`, `stat` (with count-up), `chart-bar`.
+Element vocabulary: `text` (textRole: display/headline/title/body/caption/kicker), `shape` (rect/line/circle/gradient-field), `image`, `video` (frame-extracted clips), `figure` (sanitized token-themed HTML mockups — start from core/figures-library/), `cursor`, `stat` (with count-up), `chart-bar`.
+
+**Complex UI & interaction (ADR-0008).** Author product mockups as figure fragments (full HTML/CSS, styled ONLY via var(--bg|surface|primary|accent|text|text-dim) and var(--font-display|text|mono); scripts stripped; content clipped to the figure's bounds). Give inner nodes ids and animate them with `target: "figureId/innerId"` — dropdowns opening, buttons pulsing, toasts appearing. Stage interactions with `cursor` + `cursor-move` (waypoints) + `cursor-click`, and `type-in` on text for typing moments. Attach sounds to motion via `sfx` on the animation (click.wav for cursor-click; kit in core/audio-library/sfx). Sparse by rule: MO-AUD-3.
 
 **Assets from the world (ADR-0006).** When the brief references real material — a product, a site, a logo, photography — acquire it BEFORE writing the score, never by URL inside it:
 - `chitra fetch <url> -o assets/name.jpg [--max-width 1600]` — download + normalize an image (strips metadata, logs provenance to `assets/sources.jsonl`).

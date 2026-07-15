@@ -48,11 +48,15 @@ export function runStaticGates(score: ScoreT): Finding[] {
 
     // IR-REF-2: every animation target must resolve to an element (or group prefix)
     scene.choreography.forEach((a, ai) => {
-      const exists = a.target.endsWith("*")
-        ? scene.elements.some((e) => e.id.startsWith(a.target.slice(0, -1)))
-        : scene.elements.some((e) => e.id === a.target);
+      const exists = a.target.includes("/")
+        ? // figure internals: the figure must exist here; the inner id is checked
+          // against the live DOM at session open (missingTargets fails loudly)
+          scene.elements.some((e) => e.id === a.target.split("/")[0] && e.type === "figure")
+        : a.target.endsWith("*")
+          ? scene.elements.some((e) => e.id.startsWith(a.target.slice(0, -1)))
+          : scene.elements.some((e) => e.id === a.target);
       if (!exists)
-        f.push({ ruleId: "IR-REF-2", severity: "P1", path: p(`.choreography[${ai}]`), message: `Animation "${a.id}" targets "${a.target}" but no such element exists in this scene` });
+        f.push({ ruleId: "IR-REF-2", severity: "P1", path: p(`.choreography[${ai}]`), message: `Animation "${a.id}" targets "${a.target}" but no such element exists in this scene${a.target.includes("/") ? " (figureId/innerId requires a figure element with that id)" : ""}` });
     });
 
     // IR-CUR-1 (ADR-0008): waypoints exist ONLY on cursor-move aimed at a cursor;

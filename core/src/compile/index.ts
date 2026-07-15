@@ -332,9 +332,11 @@ function presetTweens(
   const isChart = scene.elements.some((e) => e.id === anim.target && e.type === "chart-bar");
   const sel = isChart
     ? `#${scene.id}--${anim.target} .bar`
-    : anim.target.endsWith("*")
-      ? `[id^="${scene.id}--${anim.target.slice(0, -1)}"].el, [id^="${scene.id}--${anim.target.slice(0, -1)}"]`
-      : `#${scene.id}--${anim.target}`;
+    : anim.target.includes("/")
+      ? `#${scene.id}--${anim.target.split("/")[0]} #${anim.target.split("/")[1]}` // figure internals (ADR-0008)
+      : anim.target.endsWith("*")
+        ? `[id^="${scene.id}--${anim.target.slice(0, -1)}"].el, [id^="${scene.id}--${anim.target.slice(0, -1)}"]`
+        : `#${scene.id}--${anim.target}`;
   const at = sceneStartMs + startMs;
   const stg = anim.stagger ? { each: anim.stagger.eachMs / 1000, from: anim.stagger.from } : undefined;
   const base = { targets: sel, atMs: at, durationMs, ease, stagger: stg, kind: PRESETS[anim.preset as PresetName].kind };

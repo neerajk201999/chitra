@@ -253,6 +253,14 @@ const SFX_RECIPES: Record<string, string[]> = {
     "-af", "lowpass=f=1400,afade=t=in:d=0.1,afade=t=out:st=0.55:d=0.35"],
   "boom.wav": ["-f", "lavfi", "-i", "sine=frequency=52:duration=1.0",
     "-af", "lowpass=f=140,afade=t=in:d=0.008,afade=t=out:st=0.08:d=0.9,volume=0.9"],
+  // UI click: two-transient (sharp tap + body knock), the sound every cursor-click wants
+  "click.wav": ["-f", "lavfi",
+    "-i", "aevalsrc=0.5*sin(2*PI*2100*t)*exp(-t*260)+0.42*sin(2*PI*640*t)*exp(-t*130):s=48000:d=0.09",
+    "-af", "highpass=f=300,volume=0.85"],
+  // pop: pitched-down blip for toggles/dismissals
+  "pop.wav": ["-f", "lavfi",
+    "-i", "aevalsrc=0.5*sin(2*PI*(480-2600*t)*t)*exp(-t*70):s=48000:d=0.12",
+    "-af", "lowpass=f=1200,volume=0.85"],
 };
 
 program
@@ -281,17 +289,27 @@ program
     const bpm = o.bpm ?? 84;
     const d = o.duration;
     if (!Number.isFinite(d) || d <= 0 || d > 600) fail("--duration must be 0–600 seconds");
-    const pulseHz = bpm / 60 / 4; // one swell per bar
+    const beatS = 60 / bpm;
+    const morphS = 16 * beatS; // chord morphs over 8 bars — harmonic motion, not a static drone
+    // Two detuned roots (warm beating), fifth, and a third that morphs smoothly
+    // between major (5/4) and minor (6/5) via complementary sine weights; a
+    // heartbeat sub thump decays each beat for pulse.
     const expr =
-      `0.16*sin(2*PI*${f}*t)` +
-      `+0.10*sin(2*PI*${(f * 1.5).toFixed(2)}*t)` +
-      `+0.06*sin(2*PI*${(f * 2.003).toFixed(2)}*t)` +
-      `+0.05*sin(2*PI*${(f * 0.5).toFixed(2)}*t)*(0.5+0.5*sin(2*PI*${pulseHz.toFixed(4)}*t))`;
+      `0.13*sin(2*PI*${f}*t)+0.13*sin(2*PI*${(f + 0.7).toFixed(2)}*t)` +
+      `+0.09*sin(2*PI*${(f * 1.5).toFixed(2)}*t)` +
+      `+0.07*sin(2*PI*${(f * 1.25).toFixed(3)}*t)*(0.5+0.5*sin(2*PI*t/${morphS.toFixed(3)}))` +
+      `+0.07*sin(2*PI*${(f * 1.2).toFixed(3)}*t)*(0.5-0.5*sin(2*PI*t/${morphS.toFixed(3)}))` +
+      `+0.15*sin(2*PI*${(f / 2).toFixed(2)}*t)*exp(-4.5*mod(t\\,${beatS.toFixed(4)}))`;
     mkdirSync(path.dirname(path.resolve(o.out)), { recursive: true });
     const r = spawnSync("ffmpeg", ["-y", "-v", "error",
       "-f", "lavfi", "-i", `aevalsrc=${expr}:s=48000:d=${d.toFixed(3)}`,
-      "-af", `lowpass=f=900,tremolo=f=${(pulseHz / 2).toFixed(4)}:d=0.25,aecho=0.7:0.5:610:0.22,afade=t=in:d=1.6,afade=t=out:st=${Math.max(0, d - 2.4).toFixed(3)}:d=2.4`,
-      "-ar", "48000", "-ac", "2", path.resolve(o.out)], { encoding: "utf8" });
+      "-f", "lavfi", "-i", `anoisesrc=color=pink:amplitude=0.05:seed=7:duration=${d.toFixed(3)}`,
+      "-filter_complex",
+      `[1:a]highpass=f=2600,tremolo=f=${(1 / (4 * beatS)).toFixed(4)}:d=0.5,volume=0.5[air];` +
+      `[0:a][air]amix=inputs=2:duration=first:normalize=0,lowpass=f=1500,` +
+      `aecho=0.68:0.45:${Math.round(beatS * 750)}:0.2,` +
+      `afade=t=in:d=1.6,afade=t=out:st=${Math.max(0, d - 2.4).toFixed(3)}:d=2.4[a]`,
+      "-map", "[a]", "-ar", "48000", "-ac", "2", path.resolve(o.out)], { encoding: "utf8" });
     if (r.status !== 0) fail(`ffmpeg bed synthesis failed: ${(r.stderr ?? "").slice(-300)}`);
     console.log(`✔ ${o.out} — ${d}s ambient bed @ ${f}Hz root, pulse ${bpm}bpm`);
   });
