@@ -278,6 +278,34 @@ program
   });
 
 program
+  .command("extract-audio")
+  .argument("<video>", "source video file (a reference or recording you have rights to)")
+  .requiredOption("-o, --out <file>", "output audio (.m4a/.wav/.mp3)")
+  .option("--start <s>", "start offset seconds", parseFloat)
+  .option("--duration <s>", "clip length seconds", parseFloat)
+  .option("--json", "machine-readable output")
+  .description("Extract an audio track from a video for use as a score's music (ffmpeg). You are responsible for having the rights to reuse it — extracting a track from someone else's film does not license it.")
+  .action((video: string, o: { out: string; start?: number; duration?: number; json?: boolean }) => {
+    const src = path.resolve(video);
+    if (!existsSync(src)) fail(`No such video: ${src}`);
+    mkdirSync(path.dirname(path.resolve(o.out)), { recursive: true });
+    const args = ["-y", "-v", "error"];
+    if (o.start != null) args.push("-ss", o.start.toFixed(3));
+    args.push("-i", src);
+    if (o.duration != null) args.push("-t", o.duration.toFixed(3));
+    const ext = path.extname(o.out).toLowerCase();
+    if (ext === ".wav") args.push("-vn", "-c:a", "pcm_s16le");
+    else if (ext === ".mp3") args.push("-vn", "-c:a", "libmp3lame", "-b:a", "192k");
+    else args.push("-vn", "-c:a", "aac", "-b:a", "192k");
+    args.push(path.resolve(o.out));
+    const r = spawnSync("ffmpeg", args, { encoding: "utf8" });
+    if (r.status !== 0) fail(`audio extraction failed (does the video have an audio track?): ${(r.stderr ?? "").slice(-300)}`);
+    const dur = spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path.resolve(o.out)], { encoding: "utf8" }).stdout?.trim();
+    if (o.json) console.log(JSON.stringify({ out: o.out, source: video, durationS: dur ? +parseFloat(dur).toFixed(2) : null }, null, 2));
+    else console.log(`✔ ${o.out} — extracted from ${path.basename(video)}${dur ? ` (${(+dur).toFixed(1)}s)` : ""}\n  ⚠ ensure you have the rights to reuse this audio.`);
+  });
+
+program
   .command("bed")
   .option("-o, --out <file>", "output wav", "assets/bed.wav")
   .requiredOption("-d, --duration <s>", "bed length in seconds", parseFloat)

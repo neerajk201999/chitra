@@ -174,6 +174,36 @@ export function sanitizeFragment(html: string): string {
     .replace(/javascript:/gi, "");
 }
 
+/** ADR-0009: deterministic per-formation dot coordinates in element-box percent
+ *  (0..100 within the particle element's own box). Pure math → identical every
+ *  render. `n` is fixed per element (max of grid cols*rows and count) so a morph
+ *  never adds or drops dots. */
+type Dot = { x: number; y: number };
+function formationDots(el: { formation: string; cols: number; rows: number; count: number; radius: number; seed: number }, formation: string, n: number, boxWpct: number, boxHpct: number): Dot[] {
+  const dots: Dot[] = [];
+  if (formation === "grid") {
+    const cols = el.cols, rows = el.rows;
+    for (let i = 0; i < n; i++) {
+      const c = i % cols, r = Math.floor(i / cols) % rows;
+      dots.push({ x: cols === 1 ? 50 : 12 + (c / (cols - 1)) * 76, y: rows === 1 ? 50 : 12 + (r / (rows - 1)) * 76 });
+    }
+  } else if (formation === "ring") {
+    // radius expressed in element-box percent (relative to the smaller axis)
+    const rr = Math.min(boxWpct, boxHpct) === 0 ? el.radius : (el.radius / Math.max(boxWpct, 1)) * 100;
+    const rpct = Math.min(42, rr);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      dots.push({ x: 50 + Math.cos(a) * rpct, y: 50 + Math.sin(a) * rpct });
+    }
+  } else {
+    // scatter: seeded LCG, deterministic
+    let s = (el.seed * 2654435761) >>> 0;
+    const rnd = () => ((s = (1664525 * s + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < n; i++) dots.push({ x: 8 + rnd() * 84, y: 8 + rnd() * 84 });
+  }
+  return dots;
+}
+
 /** Cursor pointer SVG — theme-aware fill, macOS-weight silhouette. */
 function cursorSvg(variant: string, sizePx: number): string {
   const arrow = `<path d="M5 3 L5 21 L9.6 16.6 L12.4 23 L15.2 21.8 L12.4 15.4 L19 15.4 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/>`;
@@ -263,6 +293,21 @@ function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: stri
       return wrap(
         `<div class="figure" style="position:relative;width:${w}px;height:${h}px;border-radius:${r};overflow:hidden;${shadow}${vars}">${fragment}</div>`
       );
+    }
+    case "particles": {
+      const w = (el.width * score.meta.width) / 100;
+      const h = (el.height * score.meta.height) / 100;
+      const n = el.formation === "grid" ? el.cols * el.rows : el.count;
+      const dots = formationDots(el, el.formation, n, el.width, el.height);
+      const ds = Math.round(el.dotSize * scale);
+      const col = colorOf(p, el.color);
+      // Seeded phase per dot for the shimmer — deterministic twinkle.
+      let s = ((el.seed + 7) * 2654435761) >>> 0;
+      const rnd = () => ((s = (1664525 * s + 1013904223) >>> 0) / 4294967296);
+      const dotDivs = dots
+        .map((d, i) => `<div class="pdot" data-phase="${rnd().toFixed(4)}" style="left:${d.x.toFixed(3)}%;top:${d.y.toFixed(3)}%;width:${ds}px;height:${ds}px;margin-left:${-ds / 2}px;margin-top:${-ds / 2}px;background:${col};box-shadow:0 0 ${(ds * 1.5).toFixed(1)}px ${col};" data-i="${i}"></div>`)
+        .join("");
+      return wrap(`<div class="pfield" style="position:relative;width:${w}px;height:${h}px;">${dotDivs}</div>`);
     }
     case "cursor": {
       const sizePx = Math.round(28 * scale * el.scale);
@@ -410,6 +455,30 @@ function presetTweens(
     }
     case "pulse":
       return [{ ...base, vars: { keyframes: [{ scale: 0.94 }, { scale: 1 }] } }];
+    case "particle-shimmer":
+      // Per-dot opacity twinkle, phase-offset by data-phase. __shimmer marks it
+      // for the runtime, which builds a looping tween per dot from data-phase.
+      return [{ ...base, targets: `${sel} .pdot`, vars: { __shimmer: true } }];
+    case "particle-form":
+      // Radial assemble: dots fade+scale in, staggered center-out.
+      return [{ ...base, targets: `${sel} .pdot`, from: { autoAlpha: 0, scale: 0.2 }, vars: { autoAlpha: 1, scale: 1 }, stagger: { each: 0.012, from: "center" } }];
+    case "particle-morph": {
+      // Precompute per-dot pixel deltas from the element's base formation to
+      // morphTo (single-morph model; matches the reference's usage). Runtime
+      // applies x/y per dot by index.
+      const pEl = scene.elements.find((e) => e.id === anim.target);
+      const to = (anim as { morphTo?: string }).morphTo ?? "grid";
+      let deltas: Array<{ x: number; y: number }> = [];
+      if (pEl && pEl.type === "particles") {
+        const n = pEl.formation === "grid" ? pEl.cols * pEl.rows : pEl.count;
+        const boxW = (pEl.width * score.meta.width) / 100;
+        const boxH = (pEl.height * score.meta.height) / 100;
+        const from = formationDots(pEl, pEl.formation, n, pEl.width, pEl.height);
+        const dst = formationDots(pEl, to, n, pEl.width, pEl.height);
+        deltas = from.map((d, i) => ({ x: ((dst[i].x - d.x) / 100) * boxW, y: ((dst[i].y - d.y) / 100) * boxH }));
+      }
+      return [{ ...base, targets: `${sel} .pdot`, vars: { __morphDeltas: deltas } }];
+    }
     case "hide":
       // Instant, invisible state declaration — used to carry figure-internal
       // end-states across match cuts (IR-FIG-1). Not a visible exit.
@@ -555,6 +624,8 @@ html,body{background:#000;}
 .click-ring{position:absolute;border-radius:50%;border:2.5px solid #fff;opacity:0;box-shadow:0 0 12px rgba(255,255,255,0.35);}
 .caret{display:inline-block;width:0.09em;margin-left:0.06em;vertical-align:-0.12em;opacity:0;}
 .figure{font-family:var(--font-text);color:var(--text);}
+.pfield{position:relative;}
+.pdot{position:absolute;border-radius:50%;}
 </style></head>
 <body>
 <div id="stage">
@@ -604,6 +675,25 @@ SPECS.forEach(function (s) {
       tl.to(proxy, { v: end, duration: s.durationMs / 1000, ease: s.ease, lazy: false,
         onUpdate: function () { el.textContent = fmtStat(proxy.v, format, dec); } }, s.atMs / 1000);
       el.textContent = fmtStat(0, format, dec);
+    });
+    return;
+  }
+  if (s.vars.__shimmer) {
+    // ADR-0009: per-dot opacity twinkle, phase-offset by data-phase and anchored
+    // at master time 0 so every seek is deterministic. Floor 0.22 (MO-PART-1:
+    // dots never fully vanish). period = the preset duration.
+    var period = s.durationMs / 1000;
+    targets.forEach(function (dot) {
+      var phase = parseFloat(dot.getAttribute("data-phase")) || 0;
+      tl.to(dot, { opacity: 0.22, duration: period / 2, ease: "sine.inOut", yoyo: true, repeat: -1, lazy: false }, phase * period);
+    });
+    return;
+  }
+  if (s.vars.__morphDeltas) {
+    var deltas = s.vars.__morphDeltas;
+    targets.forEach(function (dot, i) {
+      var d = deltas[i] || { x: 0, y: 0 };
+      tl.to(dot, { x: d.x, y: d.y, duration: s.durationMs / 1000, ease: s.ease, lazy: false }, s.atMs / 1000);
     });
     return;
   }

@@ -136,6 +136,25 @@ const VideoElement = z.object({
   scrim: z.number().min(0).max(0.8).default(0),
 });
 
+/** ADR-0009: deterministic dot-matrix particle field. Authors pick a formation
+ *  and behavior preset; dots are never hand-placed. */
+const ParticlesElement = z.object({
+  type: z.literal("particles"),
+  id,
+  role: z.enum(["hero", "support", "ambient"]).default("ambient"),
+  formation: z.enum(["grid", "ring", "scatter"]).default("grid"),
+  color: z.enum(["primary", "accent", "text", "on-media"]).default("accent"),
+  cols: z.number().int().min(2).max(24).default(8), // grid columns
+  rows: z.number().int().min(2).max(24).default(6), // grid rows
+  count: z.number().int().min(4).max(400).default(48), // ring/scatter dot count
+  radius: z.number().min(5).max(60).default(20), // ring radius, stage units
+  dotSize: z.number().min(1).max(40).default(7), // px at 1080
+  seed: z.number().int().min(0).max(99999).default(1),
+  position: Position.default({ anchor: "center" }),
+  width: z.number().min(5).max(140).default(40),
+  height: z.number().min(5).max(140).default(40),
+});
+
 /** ADR-0008: agent-authored UI mockup — a sandboxed, token-themed HTML fragment.
  *  Scripts/handlers/external refs are stripped at compile; gates run on its pixels. */
 const FigureElement = z.object({
@@ -199,6 +218,7 @@ export const Element = z.discriminatedUnion("type", [
   VideoElement,
   FigureElement,
   CursorElement,
+  ParticlesElement,
   StatElement,
   ChartBarElement,
 ]);
@@ -238,6 +258,8 @@ export const Animation = z.object({
     .min(1)
     .max(8)
     .optional(),
+  /** ADR-0009: particle-morph only (gated MO-PART-1) — target formation for a dot field. */
+  morphTo: z.enum(["grid", "ring", "scatter"]).optional(),
   /** Escape hatch (MO-EASE-1): raw values allowed ONLY with a reason. Flagged by gates. */
   override: z
     .object({ reason, durationMs: z.number().min(50).max(5000).optional(), gsapEase: z.string().optional() })

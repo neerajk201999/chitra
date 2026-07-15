@@ -276,3 +276,31 @@ describe("figure state continuity (IR-FIG-1)", () => {
     expect(runStaticGates(s).filter((x) => x.ruleId === "IR-FIG-1").length).toBe(0);
   });
 });
+
+describe("particle fields (ADR-0009)", () => {
+  const withField = (over: object = {}) => {
+    const s = validFixture();
+    s.scenes[0].elements.push({ type: "particles", id: "field", formation: "grid", cols: 8, rows: 6, dotSize: 7, position: { anchor: "center", x: 50, y: 50 }, width: 40, height: 40, ...over } as never);
+    const v = validateScore(s);
+    return v.ok ? v.score : s;
+  };
+  it("renders a deterministic dot field and shimmer is seek-stable", () => {
+    const s = withField();
+    s.scenes[0].choreography.push({ id: "sh", target: "field", preset: "particle-shimmer", at: { after: "scene-start", offsetMs: 0 } } as never);
+    const a = compile(s).html, b = compile(s).html;
+    expect(a).toBe(b);
+    expect((a.match(/class="pdot"/g) || []).length).toBe(48);
+  });
+  it("MO-PART-1 caps dot count and confines morphTo to particle-morph", () => {
+    const big = runStaticGates(withField({ cols: 24, rows: 24 })).filter((x) => x.ruleId === "MO-PART-1");
+    expect(big.some((x) => x.severity === "P1")).toBe(true);
+    const s = withField();
+    s.scenes[0].choreography.push({ id: "bad", target: "field", preset: "particle-shimmer", morphTo: "ring", at: { after: "scene-start", offsetMs: 0 } } as never);
+    expect(runStaticGates(s).some((x) => x.ruleId === "MO-PART-1")).toBe(true);
+  });
+  it("particle presets must target a particles element", () => {
+    const s = validFixture();
+    s.scenes[0].choreography.push({ id: "wrong", target: "thesis", preset: "particle-form", at: { after: "scene-start", offsetMs: 0 } } as never);
+    expect(runStaticGates(s).some((x) => x.ruleId === "MO-PART-1")).toBe(true);
+  });
+});

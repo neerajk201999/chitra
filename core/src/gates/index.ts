@@ -75,6 +75,22 @@ export function runStaticGates(score: ScoreT): Finding[] {
         f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (type-in) targets "${a.target}" which is ${target.type}, not text` });
     });
 
+    // MO-PART-1 (ADR-0009): particle fields are bounded; morphTo only on particle-morph.
+    scene.elements.forEach((el, ei) => {
+      if (el.type !== "particles") return;
+      const n = el.formation === "grid" ? el.cols * el.rows : el.count;
+      if (n > 400)
+        f.push({ ruleId: "MO-PART-1", severity: "P1", path: p(`.elements[${ei}]`), message: `particle field "${el.id}" has ${n} dots (max 400 — perf and taste ceiling)` });
+    });
+    scene.choreography.forEach((a, ai) => {
+      const target = scene.elements.find((e) => e.id === a.target);
+      if (a.morphTo && a.preset !== "particle-morph")
+        f.push({ ruleId: "MO-PART-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" has morphTo but preset is ${a.preset} — morphTo is particle-morph only` });
+      const isPart = a.preset === "particle-shimmer" || a.preset === "particle-form" || a.preset === "particle-morph";
+      if (isPart && target && target.type !== "particles")
+        f.push({ ruleId: "MO-PART-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (${a.preset}) targets "${a.target}" which is ${target.type}, not a particles field` });
+    });
+
     // MO-CHOR-5: two entrances on one target without an exit between reads as a
     // blink (the second enter re-hides it first). Reactions use `pulse`.
     const entersByTarget = new Map<string, number>();
