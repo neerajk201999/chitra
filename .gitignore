@@ -1,0 +1,7 @@
+node_modules/
+core/dist/
+.chitra-cache/
+.chitra-page.html
+examples/*/out/
+*.log
+.DS_Store

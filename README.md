@@ -19,8 +19,27 @@ prompt → direction → design → motion → render → critique → revision 
 
 ## Status
 
-**M0 — research & architecture complete.** Six competitor/landscape deep-dives, five ADRs, motion language v0.1, roadmap to v1.0. Implementation (M1: the vertical slice) is next. See [docs/roadmap/roadmap.md](docs/roadmap/roadmap.md).
+**v0.1.0 — the vertical slice works end-to-end.** Motion IR → deterministic render (byte-identical, sha256-verified) → quality gates → evidence sheets → critique loop. The [flagship example](examples/launch-film/score.json) was directed, gated, critiqued, and revised entirely by an AI agent using this pipeline. See [docs/roadmap/roadmap.md](docs/roadmap/roadmap.md) and [known issues](docs/roadmap/known-issues.md).
+
+## Use it from your coding agent
+
+Requirements: Node 20+, ffmpeg on PATH.
+
+```bash
+git clone <this repo> chitra && cd chitra/core && npm install && npx tsc
+node dist/cli/index.js probe   # verify environment
+```
+
+Then, in Claude Code / Codex / Cursor, point your agent at the repo and ask for a video — the agent entry point is [AGENTS.md](AGENTS.md), which routes to the `create-video` and `critique-video` skills. Claude Code users can also install the plugin from [.claude-plugin/plugin.json](.claude-plugin/plugin.json).
+
+```bash
+# what the agent runs under the hood
+chitra validate score.json      # schema + static gates (fast)
+chitra check score.json         # + rendered-frame gates: contrast, safe zones, overlap, blanks
+chitra render score.json -o out.mp4 -q high   # deterministic; only dirty scenes re-render
+chitra evidence score.json -o evidence/       # contact sheet + hero frames + cut strips
+```
 
 ## Repository memory
 
-This repo is built AI-first: all context an agent needs lives in version-controlled markdown. Start at [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md).
+This repo is built AI-first: all context an agent needs lives in version-controlled markdown. Builders start at [CLAUDE.md](CLAUDE.md); users' agents start at [AGENTS.md](AGENTS.md).

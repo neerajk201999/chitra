@@ -1,21 +1,19 @@
 # Roadmap — MVP to v1.0
 
-**Status: M0 complete (2026-07-14).** Each milestone ships a working repository state and is independently valuable. Nothing in M(n+1) starts until M(n)'s exit gate passes.
+**Status (2026-07-15): M0 ✅ · M1 ✅ · M2 partial · M3 partial.** Each milestone ships a working repository state and is independently valuable. See [known-issues.md](known-issues.md) for the honest ledger.
 
-## M0 — Memory & thesis ✅ (this commit)
-Competitor reverse-engineering (6 reports, docs/research/), vision, ADR-0001…0005, motion language seed, standards, roadmap.
+## M0 — Memory & thesis ✅ 2026-07-14
+Competitor reverse-engineering (6 reports + stack validation, docs/research/), vision, ADR-0001…0005, motion language seed, standards, roadmap.
 
-## M1 — Proof of taste (the vertical slice)
-*Goal: one brief → one 30–45s `brand-film`-register video that a design-literate viewer does not clock as AI-made.*
-- Motion IR v0 (both tiers, zod), IR diff/patch.
-- Compiler IR → HTML/GSAP with determinism guarantees; renderer v0 (Chrome BeginFrame → FFmpeg); per-scene content-hash cache.
-- Motion token registry (machine mirror of motion-language v0.1); 2 house styles, done exceptionally, not 13 done adequately.
-- `chitra check` (validate + gates L1/L2) and `chitra render`.
-- 1 flagship example, committed reproducibly (brief → IR → video).
-- **Exit gate:** deterministic re-render byte-identical; all enforced MO rules gated in code; flagship passes internal blind review.
+## M1 — Proof of taste (the vertical slice) ✅ 2026-07-15
+Delivered: Motion IR v0 (two tiers, zod) · compiler → HTML/GSAP with determinism guarantees · renderer (seek-protocol screenshot mode → FFmpeg, per-scene content-hash cache) · token registry · gates L1/L2 (14 unit tests green) · evidence generator · CLI (`validate/check/render/evidence/probe`) · 2 house styles (night, paper) · flagship example rendered.
+**Exit gate passed:** re-render byte-identical across independent sessions (sha256-verified) · enforced MO rules gated in code with fixtures · flagship survived an internal critique loop that found and fixed 7 real defects (4 caught by gates, 3 by visual review — one of which became a new gate, QE-OVERLAP-1).
+Also landed early from M2/M3: evidence sheets + critic/creator skills (prompts), Claude Code plugin manifest, AGENTS.md.
 
-## M2 — The closed loop (the moat)
+## M2 — The closed loop (the moat) — IN PROGRESS
 *Goal: the system catches and fixes its own defects.*
+Already landed: evidence generator (contact sheets, hero frames, cut strips) · critique-video skill (isolated critic rubric).
+Remaining:
 - Evidence generator (contact sheets, hero frames, waveform composites).
 - Critic skills v1 (typography, motion, pacing, slop, intent-match) with honest rubrics; Editor with surgical IR patching; ≤3-pass loop; delivery report.
 - Audio v1: beat grid, narration timestamps, loudness gates, beat-referenced choreography.

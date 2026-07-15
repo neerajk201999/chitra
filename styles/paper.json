@@ -1,0 +1,18 @@
+{
+  "name": "paper",
+  "$comment": "Warm light editorial. Instrument Serif display over near-paper ground. For narrative/announcement films that should feel printed, not rendered. Use line-reveal and draw-line; keep grain 0.",
+  "palette": {
+    "bg": "#faf7f2",
+    "surface": "#efe9df",
+    "primary": "#1f3a2e",
+    "accent": "#c8502e",
+    "text": "#1c1a17",
+    "textDim": "#6b655c",
+    "onMedia": "#ffffff"
+  },
+  "fonts": { "display": "Instrument Serif", "text": "Inter", "mono": "JetBrains Mono" },
+  "displayWeight": 400,
+  "textWeight": 400,
+  "trackingDisplay": -0.01,
+  "grain": 0
+}

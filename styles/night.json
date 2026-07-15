@@ -1,0 +1,18 @@
+{
+  "name": "night",
+  "$comment": "Dark, restrained, indigo-accented. For product/tech brand films. Pair with fade-up/blur-focus entrances and low-opacity gradient fields.",
+  "palette": {
+    "bg": "#0a0a0e",
+    "surface": "#1b1b24",
+    "primary": "#6e7bf2",
+    "accent": "#8ee8c8",
+    "text": "#f2f2f6",
+    "textDim": "#a2a2ae",
+    "onMedia": "#ffffff"
+  },
+  "fonts": { "display": "Space Grotesk", "text": "Inter", "mono": "JetBrains Mono" },
+  "displayWeight": 500,
+  "textWeight": 400,
+  "trackingDisplay": -0.02,
+  "grain": 0.05
+}
