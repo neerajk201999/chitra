@@ -1,0 +1,43 @@
+{
+  "$comment": "Ground-truth labels for the critic calibration cases. A critic run is scored per README.md. Labels were authored with the cases (author-label bias is documented); replace with independent human labels before publishing agreement numbers.",
+  "cases": {
+    "control-clean": {
+      "expectedVerdict": ["ship", "revise"],
+      "mustFind": [],
+      "mustNotFind": ["any P1"],
+      "maxFindings": 3,
+      "rationale": "Shipped flagship. A calibrated critic may file minor P2/P3 polish notes but no blockers; more than 3 findings on the control indicates over-triggering."
+    },
+    "uniform-monotony": {
+      "expectedVerdict": ["revise"],
+      "mustFind": [
+        { "dimension": "motion", "severityAtLeast": "P2", "gist": "every entrance is the same centered fade; rhythm is metronomic/monotonous" }
+      ],
+      "mustNotFind": [],
+      "rationale": "Deterministic gates pass (durations alternate); the defect is aesthetic uniformity across the film."
+    },
+    "slop-aesthetic": {
+      "expectedVerdict": ["revise", "redirect"],
+      "mustFind": [
+        { "dimension": "slop", "severityAtLeast": "P1", "gist": "category-guessable purple-glow AI aesthetic (two-altitude first-order fail)" },
+        { "dimension": "slop|typography", "severityAtLeast": "P2", "gist": "emoji used as design elements in display copy" }
+      ],
+      "mustNotFind": [],
+      "rationale": "The look is the #1 named tell in MO-SLOP; a critic that shrugs here is not usable."
+    },
+    "broken-hierarchy": {
+      "expectedVerdict": ["revise"],
+      "mustFind": [
+        { "dimension": "intent|composition", "severityAtLeast": "P1", "gist": "declared hero moment (the chart) is visually subordinate; decorative glow dominates the frame" }
+      ],
+      "mustNotFind": [],
+      "rationale": "Requires reading direction.json and comparing against the render — the intent-match capability specifically."
+    }
+  },
+  "scoring": {
+    "verdictMatch": "critic verdict ∈ expectedVerdict",
+    "findingHit": "a finding whose dimension matches and whose observation covers the gist (semantic match, judged by the scorer)",
+    "falsePositive": "any P1 finding on control-clean, or any finding contradicting a mustNotFind",
+    "report": "verdict matches x/4 · mustFind hits y/4 · false positives z — record per run in runs/"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "irVersion": "0.1.0",
+  "tier": "direction",
+  "title": "Chitra — Taste is the product",
+  "register": "brand-film",
+  "logline": "The industry builds renderers; Chitra builds judgment.",
+  "narrativeArc": "Setup: everyone renders. Tension: nobody directs. Peak: the investment chart makes the imbalance undeniable. Release: Chitra closes the loop.",
+  "tone": [
+    "confident",
+    "restrained",
+    "evidence-led"
+  ],
+  "audience": "developers and design-literate founders",
+  "scenes": [
+    {
+      "id": "where-tools-invest",
+      "narrativeRole": "the peak — evidence lands",
+      "shotIntent": "The viewer's eye goes straight to the chart; the Critique bar's smallness IS the argument.",
+      "heroMoment": "The investment chart dominates the frame and the tiny Critique bar lands the thesis.",
+      "pacingWeight": 1.5
+    }
+  ]
+}

@@ -6,3 +6,6 @@ examples/*/out/
 *.log
 .DS_Store
 Archive.zip
+benchmarks/critic-calibration/cases/*/.chitra-cache/
+benchmarks/critic-calibration/cases/*/.chitra-page.html
+benchmarks/critic-calibration/cases/*/evidence/

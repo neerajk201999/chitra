@@ -13,8 +13,10 @@ Also landed early from M2/M3: evidence sheets + critic/creator skills (prompts),
 ## M2 — The closed loop (the moat) — IN PROGRESS (2026-07-15: deterministic half done)
 *Goal: the system catches and fixes its own defects.*
 Landed: evidence generator · critique-video skill · **seeded-defect eval measuring 10/10 deterministic catch rate** ([benchmarks/seeded-defects](../../benchmarks/seeded-defects/results.md)) · audio v1 (music bed, −14 LUFS loudnorm verified, declared-BPM grid + MO-AUD-2) · true crossfade & fade-through-black · IR-REF-2 · adversarial review round 1 with 8 findings fixed ([docs/reviews/0001](../reviews/0001-adversarial-review.md)).
+Landed 2026-07-15 (later): critic-calibration harness — 4 labeled cases (control, monotony, slop-aesthetic, broken-hierarchy) whose defects pass deterministic gates by construction; run-001 scored 4/4 verdicts, 4/4 mustFinds, 0 false positives (author-biased — see run notes). Novelty/lineage/gap analysis in [docs/reviews/0002](../reviews/0002-novelty-and-gap.md).
 Remaining:
-- VLM critic calibration: a labeled set of good/flawed renders; measure critique-video's agreement + false-positive rate.
+- Independent critic runs (fresh sessions) + independent human labels; grow to ~20 cases across registers before publishing agreement stats.
+- Gate candidate from run-001: entrance-completes-early rule (moves part of "monotony" into deterministic territory).
 - Narration/voiceover (word timestamps), SFX hooks, beat detection (undeclared tempo).
 - Interval-based gate sampling (close the between-instants gap).
 - **Exit gate:** deterministic layer ≥80% on seeded defects (✅ 100%) AND critic layer measured against the calibration set with published agreement stats.
