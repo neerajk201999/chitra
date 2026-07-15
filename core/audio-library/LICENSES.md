@@ -7,6 +7,7 @@ no licensing obligations. Regenerate at any time:
 - `music/calm-bed.m4a` — `chitra bed -d 90 --freq 110 --bpm 72` (A2, ambient)
 - `music/pulse-bed.m4a` — `chitra bed -d 90 --freq 146.83 --bpm 104` (D3, driving)
 - `music/warm-bed.m4a` — `chitra bed -d 90 --freq 87.31 --bpm 84` (F2, warm)
+- `music/explainer-bed.m4a` — `chitra bed -d 90 --freq 130.81 --bpm 100 --style explainer` (C3, I–V–vi–IV, plucks, kick, hats)
 - `sfx/*` — `chitra sfx-kit` (tick, whoosh, rise, boom, click, pop)
 
 For real produced music: drop any licensed file into your project and point

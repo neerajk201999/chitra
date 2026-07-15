@@ -283,12 +283,52 @@ program
   .requiredOption("-d, --duration <s>", "bed length in seconds", parseFloat)
   .option("--freq <hz>", "root frequency (default 110 = A2)", parseFloat)
   .option("--bpm <n>", "pulse tempo (default 84)", parseFloat)
-  .description("Synthesize a deterministic ambient music bed: root drone + fifth + slow pulse, loudness-normalized at mux (ADR-0007)")
-  .action((o: { out: string; duration: number; freq?: number; bpm?: number }) => {
+  .option("--style <s>", "ambient | explainer (chords + plucked arpeggio + kick/hats)", "ambient")
+  .description("Synthesize a deterministic music bed, loudness-normalized at mux (ADR-0007)")
+  .action((o: { out: string; duration: number; freq?: number; bpm?: number; style?: string }) => {
     const f = o.freq ?? 110;
     const bpm = o.bpm ?? 84;
     const d = o.duration;
     if (!Number.isFinite(d) || d <= 0 || d > 600) fail("--duration must be 0–600 seconds");
+    if (o.style === "explainer") {
+      // Explainer-video bed: I–V–vi–IV pads, plucked arpeggio on 8ths, soft
+      // kick on beats, offbeat hats. Pure signal math — deterministic, CC0-free.
+      const beat = 60 / bpm;
+      const bar = 4 * beat;
+      const loop = 4 * bar;
+      // chord roots for I V vi IV relative to f: 1, 3/2, 5/3 (minor 6th degree root), 4/3
+      const chords = [
+        [f, f * 1.25, f * 1.5], // I  (maj)
+        [f * 1.5, f * 1.875, f * 2.25], // V (maj)
+        [f * 1.667, f * 2.0, f * 2.5], // vi (min)
+        [f * 1.333, f * 1.667, f * 2.0], // IV (maj)
+      ];
+      const barSel = `floor(mod(t,${loop.toFixed(4)})/${bar.toFixed(4)})`;
+      const win = `pow(sin(PI*mod(t,${bar.toFixed(4)})/${bar.toFixed(4)}),0.6)`;
+      const chordExpr = (c: number[]) => c.map((h) => `0.075*sin(2*PI*${h.toFixed(2)}*t)`).join("+");
+      const pad = `(${win})*(if(eq(${barSel},0),${chordExpr(chords[0])},if(eq(${barSel},1),${chordExpr(chords[1])},if(eq(${barSel},2),${chordExpr(chords[2])},${chordExpr(chords[3])}))))`;
+      // pluck: 8th-note arpeggio root→fifth→octave→third of the current chord
+      const slot = `floor(mod(t,${(2 * beat).toFixed(4)})/${(beat / 2).toFixed(4)})`;
+      const pluckFreq = (c: number[]) => `if(eq(${slot},0),${(c[0] * 2).toFixed(2)},if(eq(${slot},1),${(c[2] * 2).toFixed(2)},if(eq(${slot},2),${(c[1] * 2).toFixed(2)},${(c[2] * 2).toFixed(2)})))`;
+      const pluckF = `if(eq(${barSel},0),${pluckFreq(chords[0])},if(eq(${barSel},1),${pluckFreq(chords[1])},if(eq(${barSel},2),${pluckFreq(chords[2])},${pluckFreq(chords[3])})))`;
+      const pluck = `0.16*sin(2*PI*(${pluckF})*t)*exp(-9*mod(t,${(beat / 2).toFixed(4)}))`;
+      const kick = `0.22*sin(2*PI*52*t)*exp(-22*mod(t,${beat.toFixed(4)}))`;
+      // aevalsrc treats bare commas as channel separators — escape function commas
+      const exprEsc = `${pad}+${pluck}+${kick}`.split(",").join("\\,");
+      mkdirSync(path.dirname(path.resolve(o.out)), { recursive: true });
+      const r = spawnSync("ffmpeg", ["-y", "-v", "error",
+        "-f", "lavfi", "-i", `aevalsrc=${exprEsc}:s=48000:d=${d.toFixed(3)}`,
+        "-f", "lavfi", "-i", `anoisesrc=color=white:amplitude=0.028:seed=11:duration=${d.toFixed(3)}`,
+        "-filter_complex",
+        `[1:a]highpass=f=6000,apulsator=mode=square:hz=${(1 / (2 * beat)).toFixed(4)}:offset_l=0.5:offset_r=0.5,volume=0.7[hat];` +
+        `[0:a][hat]amix=inputs=2:duration=first:normalize=0,lowpass=f=3200,` +
+        `aecho=0.6:0.35:${Math.round(beat * 500)}:0.18,` +
+        `afade=t=in:d=0.8,afade=t=out:st=${Math.max(0, d - 2.2).toFixed(3)}:d=2.2[a]`,
+        "-map", "[a]", "-ar", "48000", "-ac", "2", path.resolve(o.out)], { encoding: "utf8" });
+      if (r.status !== 0) fail(`ffmpeg explainer bed failed: ${(r.stderr ?? "").slice(-400)}`);
+      console.log(`✔ ${o.out} — ${d}s explainer bed @ ${f}Hz root, ${bpm}bpm (I–V–vi–IV, plucks, kick, hats)`);
+      return;
+    }
     const beatS = 60 / bpm;
     const morphS = 16 * beatS; // chord morphs over 8 bars — harmonic motion, not a static drone
     // Two detuned roots (warm beating), fifth, and a third that morphs smoothly

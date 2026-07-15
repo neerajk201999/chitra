@@ -381,7 +381,12 @@ function presetTweens(
         x: ((w.x - bx) / 100) * score.meta.width,
         y: ((w.y - by) / 100) * score.meta.height,
       }));
-      return [{ ...base, vars: { keyframes: pts.map((pt) => ({ x: pt.x, y: pt.y })) } }];
+      // One continuous gesture: easeEach none + overall ease, so the easing
+      // spans the whole path — per-segment easing restarts read as abrupt
+      // stop-and-go at every waypoint (a hand doesn't move like that).
+      return [
+        { ...base, vars: { keyframes: { x: pts.map((pt) => pt.x), y: pts.map((pt) => pt.y), easeEach: "none" } } },
+      ];
     }
     case "cursor-click":
       return [
