@@ -370,22 +370,40 @@ export function compile(score: ScoreT): CompileResult {
     cursor += scene.durationMs;
   }
 
-  // Scene visibility + transitions on the master timeline
+  // Scene visibility + transitions on the master timeline.
+  // Non-cut transitions overlap: the incoming scene becomes visible when the
+  // transition starts and the outgoing scene (z-lifted above it) animates away.
+  // fade-through-black instead drives a dedicated #blackout layer whose
+  // fade-out extends into the incoming scene's first frames.
   const sceneCues: Array<Record<string, unknown>> = [];
+  const setCues: Array<{ sel: string; vars: Record<string, unknown>; atMs: number }> = [];
   for (let i = 0; i < score.scenes.length; i++) {
     const sc = score.scenes[i];
     const b = sceneBoundsMs[i];
-    sceneCues.push({ sel: `#scene-${sc.id}`, showMs: b.startMs, hideMs: b.endMs, index: i });
+    const prevTr = i > 0 ? score.scenes[i - 1].transitionOut : null;
+    const overlapMs =
+      prevTr && (prevTr.type === "fade" || prevTr.type === "wipe" || prevTr.type === "push")
+        ? DURATIONS[prevTr.duration as DurationToken]
+        : 0;
+    sceneCues.push({ sel: `#scene-${sc.id}`, showMs: b.startMs - overlapMs, hideMs: b.endMs, index: i });
+
     const tr = sc.transitionOut;
     if (tr.type !== "cut" && i < score.scenes.length - 1) {
       const trMs = DURATIONS[tr.duration as DurationToken];
       const start = b.endMs - trMs;
-      if (tr.type === "fade" || tr.type === "fade-through-black") {
-        tweens.push({ targets: `#scene-${sc.id}`, from: {}, vars: { opacity: 0 }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
-      } else if (tr.type === "wipe") {
-        tweens.push({ targets: `#scene-${sc.id}`, from: {}, vars: { clipPath: "inset(0% 100% 0% 0%)" }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
-      } else if (tr.type === "push") {
-        tweens.push({ targets: `#scene-${sc.id}`, from: {}, vars: { xPercent: -100 }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
+      if (tr.type === "fade-through-black") {
+        tweens.push({ targets: "#blackout", from: {}, vars: { opacity: 1 }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
+        tweens.push({ targets: "#blackout", from: {}, vars: { opacity: 0 }, atMs: b.endMs, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
+      } else {
+        // Outgoing scene sits above the (already visible) incoming scene.
+        setCues.push({ sel: `#scene-${sc.id}`, vars: { zIndex: 2 }, atMs: start });
+        if (tr.type === "fade") {
+          tweens.push({ targets: `#scene-${sc.id}`, from: {}, vars: { opacity: 0 }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
+        } else if (tr.type === "wipe") {
+          tweens.push({ targets: `#scene-${sc.id}`, from: {}, vars: { clipPath: "inset(0% 100% 0% 0%)" }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
+        } else if (tr.type === "push") {
+          tweens.push({ targets: `#scene-${sc.id}`, from: {}, vars: { xPercent: -100 }, atMs: start, durationMs: trMs, ease: EASINGS["move-through"], kind: "transition" });
+        }
       }
     }
   }
@@ -411,17 +429,19 @@ html,body{background:#000;}
 .scene{position:absolute;inset:0;visibility:hidden;}
 .pos{position:absolute;}
 .el{will-change:transform,opacity;}
+#blackout{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:95;}
 .grain{position:absolute;inset:0;pointer-events:none;z-index:99;}
 </style></head>
 <body>
 <div id="stage">
-${scenesHtml}${grain}
+${scenesHtml}<div id="blackout"></div>${grain}
 </div>
 <script>${gsapSource()}</script>
 <script>
 "use strict";
 var SPECS = ${JSON.stringify(tweens)};
 var CUES = ${JSON.stringify(sceneCues)};
+var SETCUES = ${JSON.stringify(setCues)};
 var TEXTMETA = ${JSON.stringify(textMeta)};
 var DURATION_MS = ${durationMs};
 
@@ -439,10 +459,11 @@ var tl = gsap.timeline({ paused: true });
 
 // Scene visibility cues (set() = zero-duration, deterministic at boundaries)
 CUES.forEach(function (c) {
-  if (c.index === 0) gsap.set(c.sel, { visibility: "visible" });
+  if (c.index === 0 || c.showMs <= 0) gsap.set(c.sel, { visibility: "visible" });
   else tl.set(c.sel, { visibility: "visible" }, c.showMs / 1000);
   if (c.hideMs < DURATION_MS) tl.set(c.sel, { visibility: "hidden" }, c.hideMs / 1000);
 });
+SETCUES.forEach(function (c) { tl.set(c.sel, c.vars, c.atMs / 1000); });
 
 var MISSING = [];
 SPECS.forEach(function (s) {
@@ -493,8 +514,17 @@ window.__chitra = {
     ).then(function () {
       return document.fonts.ready;
     }).then(function () {
+      // Images must be decoded before any capture — a late-arriving image
+      // would make frames depend on load timing.
+      return Promise.all(Array.prototype.map.call(document.images, function (img) {
+        return img.decode ? img.decode().catch(function () {}) : Promise.resolve();
+      }));
+    }).then(function () {
       var ok = families.every(function (f) { return document.fonts.check("16px '" + f + "'"); });
-      return { fontsOk: ok, missingTargets: MISSING };
+      var badImages = Array.prototype.filter.call(document.images, function (img) {
+        return !(img.complete && img.naturalWidth > 0);
+      }).map(function (img) { return img.getAttribute("src"); });
+      return { fontsOk: ok, missingTargets: MISSING, badImages: badImages };
     });
   },
   textRegions: function () {

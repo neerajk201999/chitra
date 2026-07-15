@@ -5,3 +5,4 @@ core/dist/
 examples/*/out/
 *.log
 .DS_Store
+Archive.zip

@@ -11,7 +11,7 @@
  */
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import type { ScoreT } from "../ir/schema.js";
@@ -46,18 +46,26 @@ const ENCODE = {
   high: { preset: "slow", crf: 15 },
 } as const;
 
+/**
+ * Bumped whenever compiler output changes for identical IR (new presets,
+ * markup changes, GSAP upgrades). Part of every scene hash — without it the
+ * cache serves frames compiled by an older compiler.
+ */
+export const COMPILER_CACHE_VERSION = "2";
+
 export function sceneHash(score: ScoreT, sceneIndex: number): string {
   const scene = score.scenes[sceneIndex];
   const basis = JSON.stringify({
+    compilerV: COMPILER_CACHE_VERSION,
     scene,
     style: score.style,
     meta: score.meta,
     irV: score.irVersion,
-    // transitions from the previous scene paint into this scene's frames? No —
-    // our transitions animate the *outgoing* scene, so a scene's frames depend
-    // only on itself + the NEXT scene's visibility during its transition tail.
-    next: score.scenes[sceneIndex + 1]?.id ?? null,
+    // A scene's frames depend on its neighbors: the NEXT scene is visible under
+    // this scene's transition tail (crossfade/wipe/push), and the PREVIOUS
+    // scene's fade-through-black tail paints into this scene's first frames.
     nextScene: score.scenes[sceneIndex + 1] ?? null,
+    prevScene: score.scenes[sceneIndex - 1] ?? null,
   });
   return createHash("sha256").update(basis).digest("hex").slice(0, 16);
 }
@@ -101,10 +109,13 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
   const readiness = (await page.evaluate("window.__chitra.ready()")) as {
     fontsOk: boolean;
     missingTargets: string[];
+    badImages?: string[];
   };
   if (!readiness.fontsOk) throw new Error("Fonts failed to load — compiled page is not deterministic");
   if (readiness.missingTargets.length)
     throw new Error(`Choreography targets missing in DOM: ${readiness.missingTargets.join(", ")} (compiler bug or bad IR target)`);
+  if (readiness.badImages?.length)
+    throw new Error(`Images failed to load: ${readiness.badImages.join(", ")} — check paths are relative to the score's directory`);
 
   const stage = await page.$("#stage");
   if (!stage) throw new Error("No #stage in compiled page");
@@ -194,7 +205,19 @@ export async function renderScore(
     // Encode: pipe PNGs in order (stack-validation §4)
     const enc = ENCODE[quality];
     mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
-    await pipeEncode(framePaths, fps, outFile, enc.preset, enc.crf);
+    const music = score.audio?.music;
+    if (music) {
+      const silent = outFile.replace(/(\.[a-z0-9]+)?$/i, ".video-only.mp4");
+      await pipeEncode(framePaths, fps, silent, enc.preset, enc.crf);
+      await muxMusic(silent, path.resolve(projectDir, music.src), outFile, {
+        durationS: compiled.durationMs / 1000,
+        gainDb: music.gainDb,
+        fadeOutMs: music.fadeOutMs,
+      });
+      rmSync(silent, { force: true });
+    } else {
+      await pipeEncode(framePaths, fps, outFile, enc.preset, enc.crf);
+    }
 
     return {
       outFile,
@@ -207,6 +230,47 @@ export async function renderScore(
   } finally {
     await session.close();
   }
+}
+
+/**
+ * Mux a music bed onto a silent video: pre-gain trim → loudness normalization
+ * to -14 LUFS (MO-AUD-1, the streaming/social target) → tail fade → AAC.
+ * Music shorter than the video pads with silence; longer is trimmed.
+ */
+function muxMusic(
+  videoFile: string,
+  musicFile: string,
+  outFile: string,
+  opts: { durationS: number; gainDb: number; fadeOutMs: number }
+): Promise<void> {
+  if (!existsSync(musicFile)) return Promise.reject(new Error(`Music file not found: ${musicFile}`));
+  const fadeS = opts.fadeOutMs / 1000;
+  const fadeStart = Math.max(0, opts.durationS - fadeS);
+  const filter =
+    `[1:a]volume=${opts.gainDb}dB,` +
+    `loudnorm=I=-14:TP=-1.5:LRA=11,` +
+    `apad,atrim=0:${opts.durationS.toFixed(3)},` +
+    `afade=t=out:st=${fadeStart.toFixed(3)}:d=${fadeS.toFixed(3)}[a]`;
+  return runFfmpeg([
+    "-y",
+    "-i", videoFile,
+    "-i", musicFile,
+    "-filter_complex", filter,
+    "-map", "0:v", "-c:v", "copy",
+    "-map", "[a]", "-c:a", "aac", "-b:a", "192k",
+    "-movflags", "+faststart",
+    outFile,
+  ]);
+}
+
+function runFfmpeg(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const ff = spawn("ffmpeg", args, { stdio: ["ignore", "ignore", "pipe"] });
+    let err = "";
+    ff.stderr.on("data", (d) => (err += d));
+    ff.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited ${code}:\n${err.slice(-2000)}`))));
+    ff.on("error", reject);
+  });
 }
 
 function pipeEncode(frames: string[], fps: number, outFile: string, preset: string, crf: number): Promise<void> {

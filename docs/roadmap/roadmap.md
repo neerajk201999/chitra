@@ -10,14 +10,14 @@ Delivered: Motion IR v0 (two tiers, zod) · compiler → HTML/GSAP with determin
 **Exit gate passed:** re-render byte-identical across independent sessions (sha256-verified) · enforced MO rules gated in code with fixtures · flagship survived an internal critique loop that found and fixed 7 real defects (4 caught by gates, 3 by visual review — one of which became a new gate, QE-OVERLAP-1).
 Also landed early from M2/M3: evidence sheets + critic/creator skills (prompts), Claude Code plugin manifest, AGENTS.md.
 
-## M2 — The closed loop (the moat) — IN PROGRESS
+## M2 — The closed loop (the moat) — IN PROGRESS (2026-07-15: deterministic half done)
 *Goal: the system catches and fixes its own defects.*
-Already landed: evidence generator (contact sheets, hero frames, cut strips) · critique-video skill (isolated critic rubric).
+Landed: evidence generator · critique-video skill · **seeded-defect eval measuring 10/10 deterministic catch rate** ([benchmarks/seeded-defects](../../benchmarks/seeded-defects/results.md)) · audio v1 (music bed, −14 LUFS loudnorm verified, declared-BPM grid + MO-AUD-2) · true crossfade & fade-through-black · IR-REF-2 · adversarial review round 1 with 8 findings fixed ([docs/reviews/0001](../reviews/0001-adversarial-review.md)).
 Remaining:
-- Evidence generator (contact sheets, hero frames, waveform composites).
-- Critic skills v1 (typography, motion, pacing, slop, intent-match) with honest rubrics; Editor with surgical IR patching; ≤3-pass loop; delivery report.
-- Audio v1: beat grid, narration timestamps, loudness gates, beat-referenced choreography.
-- **Exit gate:** on 10 seeded-defect briefs, the loop detects ≥80% of planted P0/P1 defects and fixes them without regressing other scenes.
+- VLM critic calibration: a labeled set of good/flawed renders; measure critique-video's agreement + false-positive rate.
+- Narration/voiceover (word timestamps), SFX hooks, beat detection (undeclared tempo).
+- Interval-based gate sampling (close the between-instants gap).
+- **Exit gate:** deterministic layer ≥80% on seeded defects (✅ 100%) AND critic layer measured against the calibration set with published agreement stats.
 
 ## M3 — Distribution (install anywhere)
 *Goal: `install → first non-embarrassing video < 10 minutes` in Claude Code, Cursor, Codex.*

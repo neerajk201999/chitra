@@ -1,12 +1,14 @@
-# Known Issues (v0.1.0 — 2026-07-15)
+# Known Issues (v0.2.0 — 2026-07-15)
 
-Honest ledger. Each item is either scheduled (milestone in parentheses) or explicitly accepted.
+Honest ledger. Each item is scheduled (milestone) or explicitly accepted. Fixed items move to the adversarial review record ([docs/reviews/0001](../reviews/0001-adversarial-review.md)).
 
-1. **Render speed ~2 fps/worker** (screenshot mode, single browser). Scheduled: per-scene parallel sessions + static-frame dedup + Linux BeginFrame mode (M5). Mitigated today by the per-scene cache — revisions re-render only dirty scenes (measured: 774→252 frames on a 2-scene edit).
-2. **`fade` transition fades to stage background, not a true crossfade** — the incoming scene only becomes visible at its own start. True overlap needs incoming-scene pre-visibility with z-order control (M2, with the Editor).
-3. **No audio pipeline yet** — `audio` field is schema-reserved, unused (M2: beat grid, narration timestamps, loudness gates, beat-referenced choreography).
-4. **QE-OVERLAP-1 samples one settled instant per scene** — moving text could overlap transiently between samples (extend to per-cut sampling in M2).
-5. **Contrast gate over media approximates** region background by mean luminance; high-variance backdrops can pass while locally failing (M2: tile-min sampling).
-6. **Chart bars at conservative 0.28 fill-opacity** read dim on some displays; acceptable on the night style, revisit with the palette system (M5 brand ingestion).
-7. **Skills are single-source but not yet compiled per harness** — Claude Code plugin + AGENTS.md work today; Cursor rules / Codex manifests + hash manifest are M3 exit work.
-8. **Renders not yet parallel/distributed** — chunk-and-concat design documented (ADR-0002 consequences), unimplemented (M5).
+1. **Render speed ~2 fps/worker** (screenshot mode, single browser, PNG disk round-trip). Scheduled: per-scene parallel sessions + static-frame dedup + Linux BeginFrame mode (M5). Mitigated by the per-scene cache (only dirty scenes re-render).
+2. **No paint-settle guarantee** between `seek()` and screenshot beyond empirical determinism on macOS; Linux/CI golden-frame verification pending (M5). Determinism claims are same-machine only.
+3. **Audio v1 covers music only** — no narration/voiceover, no SFX, no beat *detection* (tempo must be declared). Loudness (−14 LUFS) and beat-cut gates are live. (M2 remainder.)
+4. **VLM critic unproven**: no calibration set or measured human-agreement rate for `critique-video`; the deterministic layer's 10/10 seeded catch rate does not cover aesthetic judgment (M2/M4).
+5. **Expressiveness ceiling**: no keyframes, masks, video-in-scene, nested compositions, per-character type animation; one chart type. Raised only via curated presets/elements, never raw escape hatches (M3+).
+6. **Gate sampling is instant-based** (3 instants/scene): transient overlap or contrast dips between samples can slip through (M2: per-cut + interval sampling).
+7. **Skills not compiled per harness** — Claude Code plugin + AGENTS.md today; native Cursor/Codex artifacts + hash manifest are M3. No npm package yet; cold-start ~5–10 min, untested with outside users (M3 exit).
+8. **Distribution/parallel rendering unimplemented** (design in ADR-0002 consequences; M5).
+9. **Ctrl-C mid-render** may briefly orphan the vendored Chrome process (no explicit signal handler).
+10. **Example corpus is 2 scores**; agents compose better from a gallery (M3).

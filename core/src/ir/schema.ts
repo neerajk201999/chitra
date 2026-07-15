@@ -227,10 +227,18 @@ export const Score = z.object({
   }),
   style: Style,
   scenes: z.array(Scene).min(1),
-  /** Reserved for M2 (beat grid, narration, mix). Presence is schema-legal now to avoid migration. */
+  /** Audio v1: music bed with loudness normalization and an optional declared beat grid. */
   audio: z
     .object({
-      music: z.object({ src: z.string(), gainDb: z.number().min(-30).max(0).default(-6) }).optional(),
+      music: z
+        .object({
+          src: z.string().min(1), // path relative to the score's directory
+          gainDb: z.number().min(-30).max(0).default(-6), // pre-normalization trim
+          bpm: z.number().min(40).max(220).optional(), // declared tempo → enables MO-AUD-2 beat-cut gate
+          firstBeatMs: z.number().int().min(0).default(0), // offset of beat 1 in the music file
+          fadeOutMs: z.number().int().min(0).max(5000).default(800),
+        })
+        .optional(),
     })
     .optional(),
 });

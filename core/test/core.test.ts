@@ -111,10 +111,13 @@ describe("compiler determinism surface", () => {
     const edited = validFixture();
     const el = edited.scenes[3].elements.find((e) => e.type === "text");
     if (el && el.type === "text") el.content = "Changed.";
-    // scene 3 dirty; scene 2 dirty too (its frames can include scene 3 during transition tail)
+    // Editing scene 3 dirties scenes 2..4: 2's transition tail shows 3, and
+    // 3's fade-through-black tail paints into 4. Distant scenes stay cached.
+    expect(sceneHash(edited, 2)).not.toBe(sceneHash(base, 2));
     expect(sceneHash(edited, 3)).not.toBe(sceneHash(base, 3));
+    expect(sceneHash(edited, 4)).not.toBe(sceneHash(base, 4));
     expect(sceneHash(edited, 0)).toBe(sceneHash(base, 0));
-    expect(sceneHash(edited, 4)).toBe(sceneHash(base, 4));
+    expect(sceneHash(edited, 5)).toBe(sceneHash(base, 5));
   });
   it("total duration is the sum of scenes", () => {
     const s = validFixture();

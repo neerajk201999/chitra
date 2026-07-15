@@ -46,6 +46,15 @@ export function runStaticGates(score: ScoreT): Finding[] {
       return;
     }
 
+    // IR-REF-2: every animation target must resolve to an element (or group prefix)
+    scene.choreography.forEach((a, ai) => {
+      const exists = a.target.endsWith("*")
+        ? scene.elements.some((e) => e.id.startsWith(a.target.slice(0, -1)))
+        : scene.elements.some((e) => e.id === a.target);
+      if (!exists)
+        f.push({ ruleId: "IR-REF-2", severity: "P1", path: p(`.choreography[${ai}]`), message: `Animation "${a.id}" targets "${a.target}" but no such element exists in this scene` });
+    });
+
     // Register scene-length bounds
     if (scene.durationMs > reg.maxSceneMs)
       f.push({ ruleId: "MO-EDIT-2", severity: "P2", path: p(".durationMs"), message: `Scene runs ${scene.durationMs}ms; ${score.meta.register} scenes should stay ≤ ${reg.maxSceneMs}ms` });
@@ -134,6 +143,20 @@ export function runStaticGates(score: ScoreT): Finding[] {
   });
   if (slideshow.length >= Math.max(2, Math.floor(score.scenes.length * 0.5)))
     f.push({ ruleId: "MO-SLOP-1", severity: "P1", path: "scenes", message: `${slideshow.length}/${score.scenes.length} scenes are fade-only text cards — slideshow slop` });
+
+  // MO-AUD-2: with a declared beat grid, brand-film cuts land within 80ms of a beat
+  const music = score.audio?.music;
+  if (music?.bpm && score.meta.register === "brand-film") {
+    const beatMs = 60000 / music.bpm;
+    let cutMs = 0;
+    score.scenes.slice(0, -1).forEach((scene, si) => {
+      cutMs += scene.durationMs;
+      const gridPos = (cutMs - music.firstBeatMs) / beatMs;
+      const offBeatMs = Math.abs(gridPos - Math.round(gridPos)) * beatMs;
+      if (offBeatMs > 80)
+        f.push({ ruleId: "MO-AUD-2", severity: "P2", path: `scenes[${si}].durationMs`, message: `Cut at ${(cutMs / 1000).toFixed(2)}s lands ${Math.round(offBeatMs)}ms off the ${music.bpm}bpm grid (max 80ms) — nudge scene duration by ${Math.round(offBeatMs <= beatMs / 2 ? -offBeatMs : beatMs - offBeatMs)}ms` });
+    });
+  }
 
   // MO-DUR (uniformity slop): identical duration+preset everywhere
   const allAnims = score.scenes.flatMap((s) => s.choreography);
