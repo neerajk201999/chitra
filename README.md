@@ -23,7 +23,7 @@ prompt → direction → design → motion → render → critique → revision 
 
 ## Use it from your coding agent
 
-Requirements: Node 20+, ffmpeg on PATH.
+Requirements: Node 22.12+, ffmpeg on PATH.
 
 ```bash
 git clone <this repo> chitra && cd chitra/core && npm install && npx tsc

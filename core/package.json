@@ -52,7 +52,7 @@
     "url": "https://github.com/neerajk201999/chitra/issues"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"

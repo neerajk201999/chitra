@@ -2,7 +2,7 @@
 
 The deterministic core of [Chitra](https://github.com/neerajk201999/chitra) — the AI-native OS for cinematic video creation. Validate, gate, render, and generate critic evidence for Motion IR scores. No LLM calls inside; your coding agent does the reasoning, this package does the pixels.
 
-Requires Node 20+ and ffmpeg on PATH. The bundled Chrome downloads on first install (via puppeteer).
+Requires Node 22.12+ and ffmpeg on PATH. The bundled Chrome downloads on first install (via puppeteer).
 
 ```bash
 npm i -g chitra-video
