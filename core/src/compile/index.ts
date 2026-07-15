@@ -14,7 +14,7 @@
  *   }
  */
 import { createRequire } from "node:module";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import type { AnimationT, SceneT, ScoreT, ElementT } from "../ir/schema.js";
 import {
@@ -160,7 +160,28 @@ function formatStat(value: number, format: string, decimals: number): string {
   }
 }
 
-function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: string): string {
+/** ADR-0008: whitelist-style sanitizer for figure fragments. Removes script,
+ *  event handlers, javascript: URLs, and external references — determinism and
+ *  safety over expressiveness. The fragment keeps full HTML/CSS otherwise. */
+export function sanitizeFragment(html: string): string {
+  return html
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, "")
+    .replace(/<(iframe|object|embed|link|meta|base|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+    .replace(/<(iframe|object|embed|link|meta|base|form)\b[^>]*\/?>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(src|href|xlink:href)\s*=\s*("|')(?:https?:|\/\/)[^"']*\2/gi, '$1=$2$2')
+    .replace(/url\(\s*("|')?(?:https?:|\/\/)[^)]*\)/gi, "none")
+    .replace(/javascript:/gi, "");
+}
+
+/** Cursor pointer SVG — theme-aware fill, macOS-weight silhouette. */
+function cursorSvg(variant: string, sizePx: number): string {
+  const arrow = `<path d="M5 3 L5 21 L9.6 16.6 L12.4 23 L15.2 21.8 L12.4 15.4 L19 15.4 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/>`;
+  const hand = `<path d="M9 11 V5.5 a1.5 1.5 0 0 1 3 0 V10 m0-2.5 a1.5 1.5 0 0 1 3 0 V10 m0-1 a1.5 1.5 0 0 1 3 0 V11 m0 0 a1.5 1.5 0 0 1 3 0 v4 c0 4-2.5 7-6.5 7 h-1 c-2.5 0-4-1-5.2-3 L6 15.5 a1.6 1.6 0 0 1 2.6-1.8 L9 14.5 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/>`;
+  return `<svg width="${sizePx}" height="${sizePx}" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35));display:block;">${variant === "hand" ? hand : arrow}</svg>`;
+}
+
+function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: string, projectDir: string): string {
   const p = score.style.palette;
   const wrap = (inner: string, extra = "") =>
     `<div class="pos" style="${posStyle(el as never)}${extra}"><div class="el" id="${sceneId}--${el.id}">${inner}</div></div>`;
@@ -176,6 +197,18 @@ function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: stri
       const transform = el.textRole === "kicker" ? "text-transform:uppercase;" : "";
       const maxW = el.maxWidth ? `max-width:${el.maxWidth * (score.meta.width / 100)}px;` : "";
       const lh = el.textRole === "body" || el.textRole === "caption" ? 1.5 : 1.08;
+      // ADR-0008 type-in: split into char spans + caret when targeted by the preset
+      const scene = score.scenes.find((s) => s.id === sceneId);
+      const typed = scene?.choreography.some((a) => a.preset === "type-in" && a.target === el.id);
+      if (typed) {
+        const chars = [...el.content]
+          .map((c) => `<span class="ch">${c === " " ? "&nbsp;" : esc(c)}</span>`)
+          .join("");
+        const caretH = Math.round(sizePx * 0.9);
+        return wrap(
+          `<div class="txt" data-text-role="${el.textRole}" style="font-family:'${fam}';font-weight:${weight};font-size:${sizePx}px;letter-spacing:${tracking};${transform}color:${colorOf(p, el.color)};text-align:${el.align};line-height:${lh};${maxW}white-space:pre-wrap;">${chars}<span class="caret" style="height:${caretH}px;background:${colorOf(p, el.color)};"></span></div>`
+        );
+      }
       return wrap(
         `<div class="txt" data-text-role="${el.textRole}" style="font-family:'${fam}';font-weight:${weight};font-size:${sizePx}px;letter-spacing:${tracking};${transform}color:${colorOf(p, el.color)};text-align:${el.align};line-height:${lh};${maxW}white-space:pre-wrap;">${esc(el.content)}</div>`
       );
@@ -212,6 +245,30 @@ function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: stri
       const scrim = el.scrim > 0 ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,${el.scrim});border-radius:${r};"></div>` : "";
       return wrap(
         `<div style="position:relative;width:${w}px;height:${h}px;border-radius:${r};overflow:hidden;background:#000;"><img class="chitra-vid" data-vid="${esc(sceneId)}--${esc(el.id)}" style="width:100%;height:100%;object-fit:${el.fit};display:block;"/>${scrim}</div>`
+      );
+    }
+    case "figure": {
+      const w = (el.width * score.meta.width) / 100;
+      const h = (el.height * score.meta.height) / 100;
+      const r = `${(el.radius * Math.min(score.meta.width, score.meta.height)) / 100}px`;
+      const file = path.resolve(projectDir, el.src);
+      if (!existsSync(file)) throw new Error(`figure fragment not found: ${el.src} (resolved to ${file})`);
+      const fragment = sanitizeFragment(readFileSync(file, "utf8"));
+      const shadow = el.shadow ? `box-shadow:0 ${18 * scale}px ${60 * scale}px rgba(0,0,0,0.45);` : "";
+      // Token bridge: fragments style themselves ONLY through these variables.
+      const vars =
+        `--bg:${p.bg};--surface:${p.surface};--primary:${p.primary};--accent:${p.accent};` +
+        `--text:${p.text};--text-dim:${p.textDim};--on-media:${p.onMedia};` +
+        `--font-display:'${score.style.fonts.display}';--font-text:'${score.style.fonts.text}';--font-mono:'${score.style.fonts.mono}';`;
+      return wrap(
+        `<div class="figure" style="position:relative;width:${w}px;height:${h}px;border-radius:${r};overflow:hidden;${shadow}${vars}">${fragment}</div>`
+      );
+    }
+    case "cursor": {
+      const sizePx = Math.round(28 * scale * el.scale);
+      return wrap(
+        `<div style="position:relative;">${cursorSvg(el.variant, sizePx)}<div class="click-ring" style="width:${sizePx * 1.6}px;height:${sizePx * 1.6}px;left:${-sizePx * 0.22}px;top:${-sizePx * 0.22}px;"></div></div>`,
+        "z-index:90;"
       );
     }
     case "stat": {
@@ -310,6 +367,37 @@ function presetTweens(
       return [{ ...base, from: { x: -dx || 0, y: -dy || 0 }, vars: { x: dx || 0, y: dy || 0 } }];
     case "scale-drift":
       return [{ ...base, from: { scale: 1 }, vars: { scale: 1.06 } }];
+    case "cursor-move": {
+      // Waypoints in stage units → px offsets from the cursor's authored position
+      const cur = scene.elements.find((e) => e.id === anim.target);
+      const bx = cur?.position?.x ?? 50;
+      const by = cur?.position?.y ?? 50;
+      const pts = (anim.waypoints ?? []).map((w) => ({
+        x: ((w.x - bx) / 100) * score.meta.width,
+        y: ((w.y - by) / 100) * score.meta.height,
+      }));
+      return [{ ...base, vars: { keyframes: pts.map((pt) => ({ x: pt.x, y: pt.y })) } }];
+    }
+    case "cursor-click":
+      return [
+        { ...base, vars: { keyframes: [{ scale: 0.82 }, { scale: 1 }] } },
+        {
+          ...base,
+          targets: `${sel} .click-ring`,
+          from: { autoAlpha: 0.75, scale: 0.2 },
+          vars: { autoAlpha: 0, scale: 1 },
+        },
+      ];
+    case "type-in": {
+      const target = scene.elements.find((e) => e.id === anim.target);
+      const n = target && target.type === "text" ? Math.max([...target.content].length, 1) : 1;
+      return [
+        // chars appear discretely at a fixed cadence — typing, not fading
+        { ...base, targets: `${sel} .ch`, from: { autoAlpha: 0 }, vars: { autoAlpha: 1, duration: 0.001, ease: "none" }, stagger: { each: durationMs / n / 1000, from: "start" } },
+        // caret: visible during the reveal, blinks, then exits
+        { ...base, targets: `${sel} .caret`, from: { autoAlpha: 0 }, vars: { keyframes: [{ autoAlpha: 1 }, { autoAlpha: 1 }, { autoAlpha: 0.15 }, { autoAlpha: 1 }, { autoAlpha: 0.15 }, { autoAlpha: 1 }, { autoAlpha: 0 }] } },
+      ];
+    }
     case "fade-out":
       return [{ ...base, vars: { autoAlpha: 0 } }];
     case "fade-down-out":
@@ -341,7 +429,7 @@ export interface CompileResult {
   sceneBoundsMs: Array<{ id: string; startMs: number; endMs: number }>;
 }
 
-export function compile(score: ScoreT): CompileResult {
+export function compile(score: ScoreT, projectDir = "."): CompileResult {
   const { width, height, fps } = score.meta;
   const scale = Math.min(width, height) / 1080;
   const p = score.style.palette;
@@ -359,7 +447,7 @@ export function compile(score: ScoreT): CompileResult {
       scene.background === "image" && scene.backgroundImage
         ? `background:${p.bg} url('${esc(scene.backgroundImage)}') center/cover no-repeat;`
         : `background:${colorOf(p, scene.background)};`;
-    const els = scene.elements.map((el) => renderElement(el, score, scale, scene.id)).join("\n");
+    const els = scene.elements.map((el) => renderElement(el, score, scale, scene.id, projectDir)).join("\n");
     scenesHtml += `<div class="scene" id="scene-${scene.id}" style="${bg}">${els}</div>\n`;
 
     const overMedia = textOverMedia(scene);
@@ -443,6 +531,9 @@ html,body{background:#000;}
 .el{will-change:transform,opacity;}
 #blackout{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:95;}
 .grain{position:absolute;inset:0;pointer-events:none;z-index:99;}
+.click-ring{position:absolute;border-radius:50%;border:2.5px solid #fff;opacity:0;box-shadow:0 0 12px rgba(255,255,255,0.35);}
+.caret{display:inline-block;width:0.09em;margin-left:0.06em;vertical-align:-0.12em;opacity:0;}
+.figure{font-family:var(--font-text);color:var(--text);}
 </style></head>
 <body>
 <div id="stage">

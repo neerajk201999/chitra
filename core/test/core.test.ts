@@ -214,3 +214,39 @@ describe("video-in-scene + audio v2 (ADR-0007)", () => {
     expect(html).toContain("VIDMETA");
   });
 });
+
+describe("figures & interaction choreography (ADR-0008)", () => {
+  it("sanitizer strips scripts, handlers, and external refs but keeps UI markup", async () => {
+    const { sanitizeFragment } = await import("../src/compile/index.js");
+    const dirty = `<div class="card" onclick="evil()" style="background:var(--surface)">
+      <script>alert(1)</script><iframe src="https://x.com"></iframe>
+      <img src="https://remote/x.png"/><a href="javascript:void(0)">ok</a>
+      <button style="background:url(https://a/b.png)">Send</button></div>`;
+    const clean = sanitizeFragment(dirty);
+    for (const bad of ["<script", "<iframe", "onclick", "https://remote", "javascript:", "url(https"])
+      expect(clean.toLowerCase()).not.toContain(bad);
+    expect(clean).toContain('class="card"');
+    expect(clean).toContain("var(--surface)");
+    expect(clean).toContain("<button");
+  });
+  it("IR-CUR-1 gates waypoint misuse and wrong-kind targets", () => {
+    const s = validFixture();
+    s.scenes[0].elements.push({ type: "cursor", id: "cur" } as never);
+    s.scenes[0].choreography.push(
+      { id: "bad-way", target: "thesis", preset: "fade-in", waypoints: [{ x: 10, y: 10 }], at: { after: "scene-start", offsetMs: 0 } } as never,
+      { id: "no-way", target: "cur", preset: "cursor-move", at: { after: "scene-start", offsetMs: 0 } } as never,
+      { id: "bad-type", target: "cur", preset: "type-in", at: { after: "scene-start", offsetMs: 0 } } as never,
+    );
+    const hits = runStaticGates(s).filter((x) => x.ruleId === "IR-CUR-1");
+    expect(hits.length).toBe(3);
+  });
+  it("type-in splits target text into char spans with a caret", () => {
+    const s = validFixture();
+    s.scenes[0].choreography.push({ id: "t", target: "thesis", preset: "type-in", at: { after: "scene-start", offsetMs: 0 } } as never);
+    const html = compile(validFixture()).html;
+    const typedHtml = compile(s).html;
+    expect(html).not.toContain('class="ch"');
+    expect(typedHtml).toContain('class="ch"');
+    expect(typedHtml).toContain('class="caret"');
+  });
+});

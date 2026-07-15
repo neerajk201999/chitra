@@ -55,6 +55,22 @@ export function runStaticGates(score: ScoreT): Finding[] {
         f.push({ ruleId: "IR-REF-2", severity: "P1", path: p(`.choreography[${ai}]`), message: `Animation "${a.id}" targets "${a.target}" but no such element exists in this scene` });
     });
 
+    // IR-CUR-1 (ADR-0008): waypoints exist ONLY on cursor-move aimed at a cursor;
+    // interaction presets must aim at their element kind.
+    scene.choreography.forEach((a, ai) => {
+      const target = scene.elements.find((e) => e.id === a.target);
+      if (a.waypoints && a.preset !== "cursor-move")
+        f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" carries waypoints but preset is ${a.preset} — waypoints are cursor-move only` });
+      if (a.preset === "cursor-move" || a.preset === "cursor-click") {
+        if (target && target.type !== "cursor")
+          f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (${a.preset}) targets "${a.target}" which is ${target.type}, not a cursor` });
+        if (a.preset === "cursor-move" && !a.waypoints?.length)
+          f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" is cursor-move with no waypoints` });
+      }
+      if (a.preset === "type-in" && target && target.type !== "text")
+        f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (type-in) targets "${a.target}" which is ${target.type}, not text` });
+    });
+
     // MO-MED-1: text positioned over a media rect needs a scrim or on-media color.
     // Static approximation: the text element's anchor point falling inside the
     // image rect counts as "over" — the rendered-frame gates own exact geometry.

@@ -92,6 +92,10 @@ export const PRESETS = {
   "draw-line": { defaultEasing: "move-through", defaultDuration: "dramatic", kind: "feature" },
   "drift": { defaultEasing: "linear", defaultDuration: "cinematic", kind: "ambient" }, // slow ambient travel
   "scale-drift": { defaultEasing: "linear", defaultDuration: "cinematic", kind: "ambient" }, // ken-burns style
+  // Interaction choreography (ADR-0008): staged product moments
+  "cursor-move": { defaultEasing: "move-through", defaultDuration: "cinematic", kind: "feature" }, // waypoints, cursor targets only
+  "cursor-click": { defaultEasing: "spring-standard", defaultDuration: "standard", kind: "feature" }, // dip + click ring
+  "type-in": { defaultEasing: "linear", defaultDuration: "cinematic", kind: "enter" }, // per-char reveal + caret
   "fade-out": { defaultEasing: "exit-swift", defaultDuration: "standard", kind: "exit" },
   "fade-down-out": { defaultEasing: "exit-swift", defaultDuration: "standard", kind: "exit" },
   "scale-out": { defaultEasing: "exit-swift", defaultDuration: "standard", kind: "exit" },

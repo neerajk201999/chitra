@@ -75,7 +75,7 @@ function assetDigests(score: ScoreT, sceneIndex: number, projectDir: string): Re
   for (const idx of [sceneIndex - 1, sceneIndex, sceneIndex + 1]) {
     const scene = score.scenes[idx];
     if (!scene) continue;
-    const srcs = scene.elements.filter((e) => e.type === "image" || e.type === "video").map((e) => (e as { src: string }).src);
+    const srcs = scene.elements.filter((e) => e.type === "image" || e.type === "video" || e.type === "figure").map((e) => (e as { src: string }).src);
     if (scene.background === "image" && scene.backgroundImage) srcs.push(scene.backgroundImage);
     for (const a of scene.choreography) if (a.sfx) srcs.push(a.sfx.src);
     for (const src of srcs) {
@@ -177,7 +177,7 @@ export function prepareMedia(
 
 /** Compile the score, write the page next to the project assets, open a driven browser. */
 export async function openSession(score: ScoreT, projectDir: string, workDir: string): Promise<RenderSession> {
-  const compiled = compile(score);
+  const compiled = compile(score, projectDir);
   mkdirSync(workDir, { recursive: true });
   // Page lives in the project dir so relative asset paths (images) resolve.
   // Absolute path required: file:// URLs cannot be relative.

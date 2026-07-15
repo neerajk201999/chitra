@@ -136,6 +136,36 @@ const VideoElement = z.object({
   scrim: z.number().min(0).max(0.8).default(0),
 });
 
+/** ADR-0008: agent-authored UI mockup — a sandboxed, token-themed HTML fragment.
+ *  Scripts/handlers/external refs are stripped at compile; gates run on its pixels. */
+const FigureElement = z.object({
+  type: z.literal("figure"),
+  id,
+  role: z.enum(["hero", "support"]).default("hero"),
+  src: z
+    .string()
+    .min(1)
+    .regex(/\.html$/, "figure src must be an .html fragment")
+    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+      message: "figure src must be a project-relative .html fragment",
+    }),
+  position: Position.default({ anchor: "center" }),
+  width: z.number().min(5).max(140).default(60),
+  height: z.number().min(5).max(140).default(60),
+  radius: z.number().min(0).max(50).default(0),
+  shadow: z.boolean().default(true), // soft elevation, theme-aware
+});
+
+/** ADR-0008: stylized pointer for staged interaction moments. */
+const CursorElement = z.object({
+  type: z.literal("cursor"),
+  id,
+  role: z.literal("support").default("support"),
+  variant: z.enum(["arrow", "hand"]).default("arrow"),
+  position: Position.default({ anchor: "center" }),
+  scale: z.number().min(0.6).max(2).default(1),
+});
+
 const StatElement = z.object({
   type: z.literal("stat"),
   id,
@@ -167,6 +197,8 @@ export const Element = z.discriminatedUnion("type", [
   ShapeElement,
   ImageElement,
   VideoElement,
+  FigureElement,
+  CursorElement,
   StatElement,
   ChartBarElement,
 ]);
@@ -194,6 +226,12 @@ export const Animation = z.object({
   stagger: Stagger.optional(),
   distance: z.number().min(1).max(60).optional(), // travel in stage units (slide/fade-up/drift)
   direction: z.enum(["up", "down", "left", "right"]).optional(),
+  /** ADR-0008: cursor-move only (gated IR-CUR-1) — the sole waypoint surface in the IR. */
+  waypoints: z
+    .array(z.object({ x: z.number().min(-20).max(120), y: z.number().min(-20).max(120) }))
+    .min(1)
+    .max(8)
+    .optional(),
   /** Escape hatch (MO-EASE-1): raw values allowed ONLY with a reason. Flagged by gates. */
   override: z
     .object({ reason, durationMs: z.number().min(50).max(5000).optional(), gsapEase: z.string().optional() })
