@@ -75,7 +75,7 @@ export function runStaticGates(score: ScoreT): Finding[] {
         f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (type-in) targets "${a.target}" which is ${target.type}, not text` });
     });
 
-    // MO-CHOR-3: two entrances on one target without an exit between reads as a
+    // MO-CHOR-4: two entrances on one target without an exit between reads as a
     // blink (the second enter re-hides it first). Reactions use `pulse`.
     const entersByTarget = new Map<string, number>();
     scene.choreography.forEach((a) => {
@@ -85,7 +85,7 @@ export function runStaticGates(score: ScoreT): Finding[] {
     });
     for (const [tgt, n] of entersByTarget)
       if (n > 1)
-        f.push({ ruleId: "MO-CHOR-3", severity: "P2", path: p(".choreography"), message: `"${tgt}" has ${n} entrances with no exit between — the later one re-hides it first (use 'pulse' for reactions)` });
+        f.push({ ruleId: "MO-CHOR-4", severity: "P2", path: p(".choreography"), message: `"${tgt}" has ${n} entrances with no exit between — the later one re-hides it first (use 'pulse' for reactions)` });
 
     // IR-FIG-1: figure internal state does NOT carry across cuts — each scene
     // instantiates the fragment at its authored initial state. If a figure
