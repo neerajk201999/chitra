@@ -266,9 +266,12 @@ function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: stri
     }
     case "cursor": {
       const sizePx = Math.round(28 * scale * el.scale);
+      // Cursor coordinates mean the pointer TIP (the OS hot-spot), not the box
+      // center — the arrow's tip sits at ~21%,12.5% of its viewBox, so the
+      // wrapper translate overrides the anchor transform to pin it there.
       return wrap(
         `<div style="position:relative;">${cursorSvg(el.variant, sizePx)}<div class="click-ring" style="width:${sizePx * 1.6}px;height:${sizePx * 1.6}px;left:${-sizePx * 0.22}px;top:${-sizePx * 0.22}px;"></div></div>`,
-        "z-index:90;"
+        "z-index:90;transform:translate(-21%,-12.5%);"
       );
     }
     case "stat": {
@@ -405,6 +408,11 @@ function presetTweens(
     case "hide":
       // Instant, invisible state declaration — used to carry figure-internal
       // end-states across match cuts (IR-FIG-1). Not a visible exit.
+      // At scene-start it must hold from timeline build (immediateRender):
+      // transitions reveal the next scene EARLY, under the outgoing scene's
+      // fade — a start-scheduled hide would ghost for the fade duration.
+      if (startMs === 0)
+        return [{ ...base, durationMs: 1, from: { autoAlpha: 0 }, vars: { autoAlpha: 0, duration: 0.001, ease: "none" } }];
       return [{ ...base, durationMs: 1, vars: { autoAlpha: 0, duration: 0.001, ease: "none" } }];
     case "fade-out":
       return [{ ...base, vars: { autoAlpha: 0 } }];
