@@ -96,6 +96,8 @@ export const PRESETS = {
   "cursor-move": { defaultEasing: "move-through", defaultDuration: "cinematic", kind: "feature" }, // waypoints, cursor targets only
   "cursor-click": { defaultEasing: "spring-standard", defaultDuration: "standard", kind: "feature" }, // dip + click ring
   "type-in": { defaultEasing: "linear", defaultDuration: "cinematic", kind: "enter" }, // per-char reveal + caret
+  "pulse": { defaultEasing: "spring-standard", defaultDuration: "standard", kind: "feature" }, // reaction: dip-and-settle, no alpha
+  "hide": { defaultEasing: "linear", defaultDuration: "standard", kind: "exit" }, // instant state declaration (match-cut continuity)
   "fade-out": { defaultEasing: "exit-swift", defaultDuration: "standard", kind: "exit" },
   "fade-down-out": { defaultEasing: "exit-swift", defaultDuration: "standard", kind: "exit" },
   "scale-out": { defaultEasing: "exit-swift", defaultDuration: "standard", kind: "exit" },

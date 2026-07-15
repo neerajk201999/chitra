@@ -261,3 +261,18 @@ describe("figure internals as nested comps (ADR-0008)", () => {
     expect(v.ok).toBe(true); // syntax itself is legal
   });
 });
+
+describe("figure state continuity (IR-FIG-1)", () => {
+  it("flags internals changed in scene N but not re-declared in the continuing scene", () => {
+    const s = validFixture();
+    const fig = { type: "figure", id: "card", src: "figures/x.html", position: { anchor: "center", x: 50, y: 46 }, width: 40, height: 24 };
+    s.scenes[0].elements.push(structuredClone(fig) as never);
+    s.scenes[1].elements.push(structuredClone(fig) as never);
+    s.scenes[0].choreography.push({ id: "ph-out", target: "card/ph", preset: "fade-out", at: { after: "scene-start", offsetMs: 300 } } as never);
+    const hits = runStaticGates(s).filter((x) => x.ruleId === "IR-FIG-1");
+    expect(hits.length).toBe(1);
+    // re-declaring with `hide` clears it
+    s.scenes[1].choreography.push({ id: "ph-off", target: "card/ph", preset: "hide", at: { after: "scene-start", offsetMs: 0 } } as never);
+    expect(runStaticGates(s).filter((x) => x.ruleId === "IR-FIG-1").length).toBe(0);
+  });
+});

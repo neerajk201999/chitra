@@ -400,6 +400,12 @@ function presetTweens(
         { ...base, targets: `${sel} .caret`, from: { autoAlpha: 0 }, vars: { keyframes: [{ autoAlpha: 1 }, { autoAlpha: 1 }, { autoAlpha: 0.15 }, { autoAlpha: 1 }, { autoAlpha: 0.15 }, { autoAlpha: 1 }, { autoAlpha: 0 }] } },
       ];
     }
+    case "pulse":
+      return [{ ...base, vars: { keyframes: [{ scale: 0.94 }, { scale: 1 }] } }];
+    case "hide":
+      // Instant, invisible state declaration — used to carry figure-internal
+      // end-states across match cuts (IR-FIG-1). Not a visible exit.
+      return [{ ...base, durationMs: 1, vars: { autoAlpha: 0, duration: 0.001, ease: "none" } }];
     case "fade-out":
       return [{ ...base, vars: { autoAlpha: 0 } }];
     case "fade-down-out":

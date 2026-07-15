@@ -75,6 +75,44 @@ export function runStaticGates(score: ScoreT): Finding[] {
         f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (type-in) targets "${a.target}" which is ${target.type}, not text` });
     });
 
+    // MO-CHOR-3: two entrances on one target without an exit between reads as a
+    // blink (the second enter re-hides it first). Reactions use `pulse`.
+    const entersByTarget = new Map<string, number>();
+    scene.choreography.forEach((a) => {
+      const kind = PRESETS[a.preset as PresetName].kind;
+      if (kind === "enter") entersByTarget.set(a.target, (entersByTarget.get(a.target) ?? 0) + 1);
+      if (kind === "exit") entersByTarget.set(a.target, 0);
+    });
+    for (const [tgt, n] of entersByTarget)
+      if (n > 1)
+        f.push({ ruleId: "MO-CHOR-3", severity: "P2", path: p(".choreography"), message: `"${tgt}" has ${n} entrances with no exit between — the later one re-hides it first (use 'pulse' for reactions)` });
+
+    // IR-FIG-1: figure internal state does NOT carry across cuts — each scene
+    // instantiates the fragment at its authored initial state. If a figure
+    // continues into the next scene (same src, same position), every internal
+    // whose visibility this scene changed must be re-declared there (enter it,
+    // or pin its end-state with `hide`). Forgetting this resurrects hidden
+    // placeholders under typed text (found by the Claude Design recreation).
+    const nextScene = score.scenes[si + 1];
+    if (nextScene) {
+      for (const fig of scene.elements) {
+        if (fig.type !== "figure") continue;
+        const cont = nextScene.elements.find(
+          (e) => e.type === "figure" && e.src === fig.src && (e.position.x ?? 50) === (fig.position.x ?? 50) && (e.position.y ?? 50) === (fig.position.y ?? 50)
+        );
+        if (!cont) continue;
+        scene.choreography.forEach((a) => {
+          if (!a.target.startsWith(`${fig.id}/`)) return;
+          const kind = PRESETS[a.preset as PresetName].kind;
+          if (kind !== "enter" && kind !== "exit") return;
+          const inner = a.target.split("/")[1];
+          const redeclared = nextScene.choreography.some((b) => b.target === `${cont.id}/${inner}`);
+          if (!redeclared)
+            f.push({ ruleId: "IR-FIG-1", severity: "P2", path: p(`.choreography`), message: `Figure "${fig.id}" continues into scene "${nextScene.id}" but internal "${inner}" (${kind} via "${a.id}") is not re-declared there — it will reset to its authored initial state across the cut (use \`hide\` or re-enter it)` });
+        });
+      }
+    }
+
     // MO-MED-1: text positioned over a media rect needs a scrim or on-media color.
     // Static approximation: the text element's anchor point falling inside the
     // image rect counts as "over" — the rendered-frame gates own exact geometry.
