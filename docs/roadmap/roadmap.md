@@ -21,6 +21,8 @@ Remaining:
 - Interval-based gate sampling (close the between-instants gap).
 - **Exit gate:** deterministic layer ≥80% on seeded defects (✅ 100%) AND critic layer measured against the calibration set with published agreement stats.
 
+> **Priority lens (2026-07-15):** [docs/research/moats.md](../research/moats.md) ranks the five-year moats: calibration data → ChitraBench → motion-language spec → creative ladder (ADR-0006 candidate). M3 remains necessary execution, but feature polish beyond it is explicitly deprioritized; CLI is declared done.
+
 ## M3 — Distribution (install anywhere)
 *Goal: `install → first non-embarrassing video < 10 minutes` in Claude Code, Cursor, Codex.*
 - Skill compiler (single source → per-harness artifacts), hash manifest, router + 2 workflow skills (product-launch, social-short), domain skills.
