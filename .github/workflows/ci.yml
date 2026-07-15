@@ -1,0 +1,38 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    env:
+      # Unit tests, gates, and validation are browser-free; skip the ~170MB
+      # Chrome download. Browser-dependent golden-frame CI is a tracked M5 item.
+      PUPPETEER_SKIP_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: core/package-lock.json
+      - name: Install
+        working-directory: core
+        run: npm ci
+      - name: Build
+        working-directory: core
+        run: npx tsc
+      - name: Unit tests (schema, gates, compiler, cache semantics)
+        working-directory: core
+        run: npx vitest run
+      - name: Compiled skill artifacts are fresh
+        run: node scripts/build-skills.mjs --check
+      - name: Examples pass static gates
+        run: |
+          node core/dist/cli/index.js validate examples/launch-film/score.json
+          node core/dist/cli/index.js validate examples/social-short/score.json
+      - name: Package is publishable
+        working-directory: core
+        run: npm pack --dry-run
