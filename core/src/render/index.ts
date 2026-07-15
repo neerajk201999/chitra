@@ -219,6 +219,13 @@ export async function renderScore(
       await pipeEncode(framePaths, fps, outFile, enc.preset, enc.crf);
     }
 
+    // Prune cache entries no longer referenced by this score — frame caches are
+    // hundreds of full-HD PNGs per scene and grow without bound otherwise
+    // (this filled a user's disk once; never again).
+    const keep = new Set(score.scenes.map((_, i) => sceneHash(score, i)));
+    for (const d of readdirSync(cacheDir, { withFileTypes: true }))
+      if (d.isDirectory() && !keep.has(d.name)) rmSync(path.join(cacheDir, d.name), { recursive: true, force: true });
+
     return {
       outFile,
       totalFrames: framePaths.length,

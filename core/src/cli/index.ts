@@ -165,8 +165,15 @@ program
   .action((dir: string, opts: { style: string; register: string; title: string }) => {
     const target = path.resolve(dir, "score.json");
     if (existsSync(target)) fail(`${target} already exists`);
-    const styleFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../styles", `${opts.style}.json`);
-    if (!existsSync(styleFile)) fail(`Unknown style "${opts.style}" (looked in ${path.dirname(styleFile)})`);
+    // Styles live at core/styles when installed from npm (copied at prepack),
+    // and at the repo root during development.
+    const cliDir = path.dirname(fileURLToPath(import.meta.url));
+    const candidates = [
+      path.resolve(cliDir, "../../styles", `${opts.style}.json`),
+      path.resolve(cliDir, "../../../styles", `${opts.style}.json`),
+    ];
+    const styleFile = candidates.find((f) => existsSync(f));
+    if (!styleFile) fail(`Unknown style "${opts.style}" (looked in ${candidates.map((c) => path.dirname(c)).join(", ")})`);
     const style = JSON.parse(readFileSync(styleFile, "utf8"));
     delete style.$comment;
     const portrait = opts.register === "social-short";

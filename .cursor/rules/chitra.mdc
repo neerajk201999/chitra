@@ -1,0 +1,15 @@
+---
+description: Chitra — create or critique cinematic motion-design videos. Apply when the user asks for a video, launch film, promo, social clip, motion design, or a review of rendered video evidence.
+alwaysApply: false
+---
+
+# Chitra (compiled rule — canonical source: skills/*/SKILL.md)
+
+This repository creates cinematic videos through a directed, gated, critiqued pipeline. Do not improvise a workflow; follow the canonical skill documents:
+
+- **create-video** — Direct and render a cinematic motion-design video from a brief using Chitra. Use when the user wants to create a video, launch film, product demo, promo, social clip, or any motion-design piece. Runs the full pipeline - direction, score, deterministic gates, render, evidence, critique loop.
+  → Follow `skills/create-video/SKILL.md` exactly.
+- **critique-video** — Run an isolated design critique over a rendered Chitra video's evidence (contact sheet, hero frames, cut strips). Use when asked to review, critique, or QA a video or its evidence directory. Produces severity-tagged findings mapped to Motion IR paths.
+  → Follow `skills/critique-video/SKILL.md` exactly.
+
+Toolchain: `node core/dist/cli/index.js <init|validate|check|frame|render|evidence|clean|probe>` (build once: `cd core && npm install && npx tsc`; requires ffmpeg). The motion law is `docs/motion/motion-language.md` — cite rules by ID, never restate values. IR reference: `core/src/ir/schema.ts`. Never present a render whose `chitra check` is not green.

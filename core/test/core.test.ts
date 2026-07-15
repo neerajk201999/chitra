@@ -77,6 +77,16 @@ describe("static gates (Quality Engine layer 2)", () => {
     const f = runStaticGates(score);
     expect(f.some((x) => x.ruleId === "MO-CHOR-2")).toBe(true);
   });
+  it("MO-EDIT-5 catches scenes that open on dead air", () => {
+    const score = validFixture();
+    // push every entrance in scene 1 past the 20%/600ms deadline
+    for (const a of score.scenes[1].choreography)
+      if (!a.override) a.at = { after: "scene-start", offsetMs: 2000 };
+    const f = runStaticGates(score);
+    expect(f.some((x) => x.ruleId === "MO-EDIT-5")).toBe(true);
+    expect(runStaticGates(validFixture()).some((x) => x.ruleId === "MO-EDIT-5")).toBe(false);
+  });
+
   it("MO-SLOP-1 catches fade-only text-card slideshows", () => {
     const score = validFixture();
     score.scenes = score.scenes.slice(0, 2).map((sc, i) => ({

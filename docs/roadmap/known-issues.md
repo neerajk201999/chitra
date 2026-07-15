@@ -8,7 +8,7 @@ Honest ledger. Each item is scheduled (milestone) or explicitly accepted. Fixed 
 4. **VLM critic unproven**: no calibration set or measured human-agreement rate for `critique-video`; the deterministic layer's 10/10 seeded catch rate does not cover aesthetic judgment (M2/M4).
 5. **Expressiveness ceiling**: no keyframes, masks, video-in-scene, nested compositions, per-character type animation; one chart type. Raised only via curated presets/elements, never raw escape hatches (M3+).
 6. **Gate sampling is instant-based** (3 instants/scene): transient overlap or contrast dips between samples can slip through (M2: per-cut + interval sampling).
-7. **Skills not compiled per harness** — Claude Code plugin + AGENTS.md today; native Cursor/Codex artifacts + hash manifest are M3. No npm package yet; cold-start ~5–10 min, untested with outside users (M3 exit).
+7. **npm package prepared, not yet published** (owner npmjs login required; this machine's npm defaults to a work registry). Cursor rule + hash manifest now compiled from single-source skills; cold start measured 6s warm-cache, 3–6 min genuinely cold (estimate) — outside-tester verification still pending (M3 exit).
 8. **Distribution/parallel rendering unimplemented** (design in ADR-0002 consequences; M5).
 9. **Ctrl-C mid-render** may briefly orphan the vendored Chrome process (no explicit signal handler).
 10. **Example corpus is 2 scores**; agents compose better from a gallery (M3).

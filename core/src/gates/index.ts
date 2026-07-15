@@ -61,6 +61,18 @@ export function runStaticGates(score: ScoreT): Finding[] {
     if (scene.durationMs < reg.minSceneMs)
       f.push({ ruleId: "MO-EDIT-2", severity: "P1", path: p(".durationMs"), message: `Scene runs ${scene.durationMs}ms; below the ${reg.minSceneMs}ms floor for ${score.meta.register} — unreadable` });
 
+    // MO-EDIT-5: no dead air — first non-ambient entrance starts early enough
+    const nonAmbient = resolved.filter((r) => {
+      const kind = PRESETS[r.anim.preset as PresetName].kind;
+      return kind === "enter" || kind === "feature";
+    });
+    if (nonAmbient.length) {
+      const firstStart = Math.min(...nonAmbient.map((r) => r.startMs));
+      const deadline = Math.max(600, scene.durationMs * 0.2);
+      if (firstStart > deadline)
+        f.push({ ruleId: "MO-EDIT-5", severity: "P2", path: p(".choreography"), message: `First entrance at ${Math.round(firstStart)}ms; scene opens dead for ${Math.round(firstStart)}ms (deadline ${Math.round(deadline)}ms) — a cut to an empty frame wastes the cut` });
+    }
+
     // MO-CHOR-2: hero discipline
     const heroes = scene.elements.filter((e) => (e as { role?: string }).role === "hero");
     if (heroes.length > 2)

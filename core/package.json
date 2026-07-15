@@ -1,16 +1,27 @@
 {
-  "name": "@chitra/core",
+  "name": "chitra-video",
   "version": "0.1.0",
-  "description": "Deterministic core for Chitra: Motion IR validation, compilation, rendering, quality gates, evidence generation",
+  "description": "Deterministic core for Chitra, the AI-native OS for cinematic video: Motion IR validation, quality gates, deterministic rendering, critic evidence",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "build": "tsc",
+    "prepack": "tsc && rm -rf styles && cp -R ../styles styles"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "video",
+    "motion-design",
+    "ai",
+    "agent",
+    "rendering",
+    "ffmpeg",
+    "quality",
+    "cinematic"
+  ],
+  "author": "Neeraj Kanoi",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -31,5 +42,25 @@
     "@types/node": "^26.1.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neerajk201999/chitra.git"
+  },
+  "homepage": "https://github.com/neerajk201999/chitra#readme",
+  "bugs": {
+    "url": "https://github.com/neerajk201999/chitra/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "files": [
+    "dist",
+    "styles",
+    "README.md",
+    "LICENSE"
+  ]
 }

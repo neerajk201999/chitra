@@ -13,20 +13,21 @@ Also landed early from M2/M3: evidence sheets + critic/creator skills (prompts),
 ## M2 — The closed loop (the moat) — IN PROGRESS (2026-07-15: deterministic half done)
 *Goal: the system catches and fixes its own defects.*
 Landed: evidence generator · critique-video skill · **seeded-defect eval measuring 10/10 deterministic catch rate** ([benchmarks/seeded-defects](../../benchmarks/seeded-defects/results.md)) · audio v1 (music bed, −14 LUFS loudnorm verified, declared-BPM grid + MO-AUD-2) · true crossfade & fade-through-black · IR-REF-2 · adversarial review round 1 with 8 findings fixed ([docs/reviews/0001](../reviews/0001-adversarial-review.md)).
-Landed 2026-07-15 (later): critic-calibration harness — 4 labeled cases (control, monotony, slop-aesthetic, broken-hierarchy) whose defects pass deterministic gates by construction; run-001 scored 4/4 verdicts, 4/4 mustFinds, 0 false positives (author-biased — see run notes). Novelty/lineage/gap analysis in [docs/reviews/0002](../reviews/0002-novelty-and-gap.md).
+Landed 2026-07-15 (later): critic-calibration harness — 4 labeled cases (control, monotony, slop-aesthetic, broken-hierarchy) whose defects pass deterministic gates by construction; run-001 scored 4/4 verdicts, 4/4 mustFinds, 0 false positives (author-biased — see run notes). Novelty/lineage/gap analysis in [docs/reviews/0002](../reviews/0002-novelty-and-gap.md). Run-001's gate candidate shipped as MO-EDIT-5 (no dead air).
 Remaining:
 - Independent critic runs (fresh sessions) + independent human labels; grow to ~20 cases across registers before publishing agreement stats.
-- Gate candidate from run-001: entrance-completes-early rule (moves part of "monotony" into deterministic territory).
 - Narration/voiceover (word timestamps), SFX hooks, beat detection (undeclared tempo).
 - Interval-based gate sampling (close the between-instants gap).
 - **Exit gate:** deterministic layer ≥80% on seeded defects (✅ 100%) AND critic layer measured against the calibration set with published agreement stats.
 
 > **Priority lens (2026-07-15):** [docs/research/moats.md](../research/moats.md) ranks the five-year moats: calibration data → ChitraBench → motion-language spec → creative ladder (ADR-0006 candidate). M3 remains necessary execution, but feature polish beyond it is explicitly deprioritized; CLI is declared done.
 
-## M3 — Distribution (install anywhere)
+## M3 — Distribution (install anywhere) — IN PROGRESS (2026-07-15)
 *Goal: `install → first non-embarrassing video < 10 minutes` in Claude Code, Cursor, Codex.*
-- Skill compiler (single source → per-harness artifacts), hash manifest, router + 2 workflow skills (product-launch, social-short), domain skills.
-- Docs site-in-repo; quickstarts per harness.
+Landed: npm publish readiness (`chitra-video`, tarball verified; publish pending owner npmjs login — this machine's npm points at a work registry) · MIT LICENSE · per-harness skill compiler (`scripts/build-skills.mjs`: Cursor rule + sha256 manifest, `--check` for CI) · MO-EDIT-5 no-dead-air gate (from calibration run-001) · render-cache auto-pruning (a full-disk incident is now structurally impossible) · scripted cold start measured: 6s warm-cache end-to-end (clone→install→build→init→first frame); genuinely-cold estimate 3–6 min (downloads dominate).
+Remaining:
+- `npm publish` (owner action) + quickstarts per harness.
+- Router + per-register workflow skills (product-launch, social-short as separate workflows).
 - **Exit gate:** cold-start test in 3 harnesses by 3 outside testers hits the 10-minute bar.
 
 ## M4 — ChitraBench (define "best")
