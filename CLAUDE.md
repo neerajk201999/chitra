@@ -1,5 +1,7 @@
 # Chitra — Session Entry Point
 
+> **Just want to *make a video* with Chitra (not develop Chitra itself)?** Stop here and read **[AGENTS.md](AGENTS.md)** — it is the user-facing entry point (build the CLI, then the create → gate → critique loop). This file is for working **on** Chitra's own codebase.
+
 You are working on Chitra: the AI-native operating system for cinematic video creation. The repository is the memory (ADR-0001) — recover all context from these files, in this order:
 
 1. **[VISION.md](VISION.md)** — mission, benchmarks, definition of world-class, refusal list. Read always.

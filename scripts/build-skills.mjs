@@ -64,6 +64,16 @@ const outputs = [
   [path.join(root, ".cursor/rules/chitra.mdc"), mdc],
 ];
 
+// Claude Code auto-discovers skills in .claude/skills/<name>/SKILL.md. Mirror the
+// canonical skills there so opening the repo in Claude Code needs no plugin
+// install (the top-level skills/ dir stays the single source of truth).
+for (const name of skillDirs) {
+  outputs.push([
+    path.join(root, ".claude/skills", name, "SKILL.md"),
+    readFileSync(path.join(root, "skills", name, "SKILL.md"), "utf8"),
+  ]);
+}
+
 let stale = 0;
 for (const [file, content] of outputs) {
   const current = existsSync(file) ? readFileSync(file, "utf8") : null;

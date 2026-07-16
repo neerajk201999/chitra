@@ -1,48 +1,65 @@
 # Chitra
 
-**The AI-native operating system for cinematic video creation.**
+**The AI-native operating system for cinematic video creation.** Point your coding agent at it and ask for a launch film — Chitra gives the agent the taste, the guardrails, and a deterministic renderer, so the output aims at Apple/CRED/Linear-grade brand and product films, not "AI video."
 
-Install into your coding agent — Claude Code, Codex, Cursor, Gemini CLI — and direct videos that approach the quality of the best brand and product films, not "AI videos."
+No API keys. No hosted service. Your agent does the reasoning; Chitra does the pixels — and refuses to ship slop.
 
-## Thesis
+---
 
-Every existing tool solves *rendering*. Chitra solves **taste**:
+## Quickest start — hand it to your agent
+
+In **Claude Code, Cursor, Codex, or Gemini CLI**, paste this:
+
+> Clone https://github.com/neerajk201999/chitra, run its `scripts/setup.sh`, then read `AGENTS.md` and make me a 20-second launch film for **<your product>**. Iterate until `chitra check` is green.
+
+That's it. The agent clones, builds, reads its own instructions ([AGENTS.md](AGENTS.md)), and drives the create → gate → critique → revise loop. **Claude Code** users get the skills automatically (they're in [`.claude/skills/`](.claude/skills)); **Cursor** users get the rule in [`.cursor/rules/`](.cursor/rules).
+
+## Human start — one command
+
+Requirements: **Node 22.12+** and **ffmpeg** on your PATH.
+
+```bash
+npm install -g chitra-video      # published to npm
+chitra probe                     # verify ffmpeg + bundled Chrome
+mkdir my-film && cd my-film
+chitra init . --style night --title "My film"   # a gate-passing starter score
+chitra render score.json -o out.mp4 -q draft    # your first video, in seconds
+```
+
+Prefer from source? `git clone https://github.com/neerajk201999/chitra && cd chitra && ./scripts/setup.sh` — checks your toolchain, builds, links the `chitra` command, and runs a probe.
+
+## The loop
 
 ```
 prompt → direction → design → motion → render → critique → revision → video
 ```
 
-- A **two-tier Motion IR**: directorial intent + an executable, schema-validated score. Diffable, patchable, deterministic. (ADR-0003)
-- A **tokenized motion language**: easing families, duration scales, pacing rules, register-aware rubrics — encoded design judgment, enforced in code. ([docs/motion](docs/motion/motion-language.md))
-- A **Quality Engine that watches the render**: structural validation → deterministic gates → isolated VLM critics over rendered evidence → surgical revision, bounded at 3 passes. (ADR-0004)
-- A **deterministic core** (compile → render → gate) with all reasoning in your agent's LLM — no API keys, no hosted service. (ADR-0002, ADR-0005)
-
-## Status
-
-**v0.2.0 — the closed loop works and is measured.** Motion IR → deterministic render (byte-identical re-renders on the same machine, sha256-verified) → quality gates (**10/10 measured catch rate** on the [seeded-defect benchmark](benchmarks/seeded-defects/results.md)) → evidence sheets → critique loop → music bed normalized to −14 LUFS with beat-grid cut gating. The [flagship example](examples/launch-film/score.json) was directed, gated, critiqued, and revised entirely by an AI agent using this pipeline, and the whole repo survived an [adversarial adoption review](docs/reviews/0001-adversarial-review.md) whose findings are fixed or tracked. See the [roadmap](docs/roadmap/roadmap.md) and [known issues](docs/roadmap/known-issues.md) — claims we haven't measured yet are marked as such there.
-
-## Use it from your coding agent
-
-Requirements: Node 22.12+, ffmpeg on PATH.
-
 ```bash
-git clone <this repo> chitra && cd chitra/core && npm install && npx tsc
-node dist/cli/index.js probe   # verify environment
-```
-
-Then, in Claude Code / Codex / Cursor, point your agent at the repo and ask for a video — the agent entry point is [AGENTS.md](AGENTS.md), which routes to the `create-video` and `critique-video` skills. Claude Code users can also install the plugin from [.claude-plugin/plugin.json](.claude-plugin/plugin.json).
-
-```bash
-# what the agent runs under the hood
-chitra init --style night --register brand-film --title "My film"   # gate-passing starter
-chitra validate score.json      # schema + static gates (fast)
+chitra init . --style night --register brand-film --title "Launch"  # never start from blank
+chitra validate score.json      # schema + static taste gates (instant)
 chitra check score.json         # + rendered-frame gates: contrast, safe zones, overlap, blanks
-chitra frame score.json -t 1800 -o peek.png   # one-frame preview in seconds
-chitra render score.json -o out.mp4 -q high   # refuses P1 findings; only dirty scenes re-render
-chitra evidence score.json -o evidence/       # contact sheet + hero frames + cut strips
-chitra clean                     # remove work artifacts
+chitra frame score.json -t 1800 -o peek.png    # one-frame preview in seconds
+chitra render score.json -o out.mp4 -q high     # full frame-gated; refuses P1 findings
+chitra evidence score.json -o evidence/         # contact sheet + hero frames + cut strips
 ```
 
-## Repository memory
+Beyond the basics: `chitra fetch`/`snap` (pull real images/screenshots), `chitra analyze-audio` + `at.onBeat` (motion scored to a track), `chitra bed`/`sfx-kit` (license-free audio), plus `image`/`video`/`figure`/`particles`/`scene3d` elements — real 3D, dot-matrix motifs, and sandboxed UI mockups. See [AGENTS.md](AGENTS.md).
 
-This repo is built AI-first: all context an agent needs lives in version-controlled markdown. Builders start at [CLAUDE.md](CLAUDE.md); users' agents start at [AGENTS.md](AGENTS.md).
+## Why it's different
+
+Every other tool solves *rendering*. Chitra also solves **taste and trust**:
+
+- **Motion IR, not raw code** — a two-tier schema (directorial intent + executable score): diffable, patchable, and impossible to fill with the usual AI-slop patterns. (ADR-0003)
+- **A quality engine that watches its own render** — 40+ deterministic gates (reading time, contrast on real pixels, safe zones, hero hierarchy, dead-air, slop signatures, beat alignment) plus evidence sheets for a bounded critique loop. Findings map to exact IR paths for surgical fixes. (ADR-0004)
+- **Determinism as a feature** — same score, byte-identical frames on the same machine (sha256-verified), including real 3D via SwiftShader. Nobody else promises this. (ADR-0002)
+- **Encoded design judgment** — a [motion language](docs/motion/motion-language.md) and [creative constitution](docs/creative/creative-constitution.md) with rules enforced in code, not just prose.
+
+## Status — honest
+
+**v0.2.0.** The closed loop works and is measured: deterministic render → gates (**10/10** on the [seeded-defect benchmark](benchmarks/seeded-defects/results.md)) → evidence → critique → revision. Capabilities shipped: images, video-in-scene, sandboxed UI figures, cursor/type choreography, particle fields, real 3D, beat-scored audio.
+
+**Not yet:** the aesthetic critic is not independently validated (small labelled set); no cross-machine golden-frame CI; no live preview UI; no distributed rendering. We publish what's proven and what isn't in the [roadmap](docs/roadmap/roadmap.md) and [known issues](docs/roadmap/known-issues.md). If a claim isn't measured, it says so.
+
+## For contributors / the curious
+
+The repo is its own memory — all context lives in version-controlled markdown. Start at [CLAUDE.md](CLAUDE.md) → [VISION.md](VISION.md) → [docs/decisions/](docs/decisions/) (ADRs) → [docs/roadmap/](docs/roadmap/). MIT licensed.

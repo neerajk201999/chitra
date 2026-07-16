@@ -3,7 +3,7 @@
 Same five minutes everywhere: install the core, scaffold, render, iterate.
 
 ```bash
-npm i -g chitra-video          # or: git clone <repo> && cd chitra/core && npm i && npx tsc
+npm i -g chitra-video          # or: git clone https://github.com/neerajk201999/chitra && cd chitra && ./scripts/setup.sh
 chitra probe                   # verifies ffmpeg + vendored Chrome
 mkdir my-film && cd my-film
 chitra init . --style night --title "My film"
