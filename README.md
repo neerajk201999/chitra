@@ -19,14 +19,18 @@ That's it. The agent clones, builds, reads its own instructions ([AGENTS.md](AGE
 Requirements: **Node 22.12+** and **ffmpeg** on your PATH.
 
 ```bash
-npm install -g chitra-video      # published to npm
-chitra probe                     # verify ffmpeg + bundled Chrome
+git clone https://github.com/neerajk201999/chitra && cd chitra && ./scripts/setup.sh
+```
+
+`setup.sh` checks your toolchain, builds, links the `chitra` command, and runs a probe. Then:
+
+```bash
 mkdir my-film && cd my-film
 chitra init . --style night --title "My film"   # a gate-passing starter score
 chitra render score.json -o out.mp4 -q draft    # your first video, in seconds
 ```
 
-Prefer from source? `git clone https://github.com/neerajk201999/chitra && cd chitra && ./scripts/setup.sh` — checks your toolchain, builds, links the `chitra` command, and runs a probe.
+Once published to npm it's simply `npm install -g chitra-video` — check [the package page](https://www.npmjs.com/package/chitra-video).
 
 ## The loop
 
