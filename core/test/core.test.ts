@@ -389,3 +389,26 @@ describe("creative conformance (ADR-0012)", () => {
     expect(runConformance(dir as never, (v as { score: unknown }).score as never).some((x: {ruleId:string}) => x.ruleId === "CC-CONF-4")).toBe(true);
   });
 });
+
+describe("branded 3D face (target-film T2)", () => {
+  it("rejects remote faceSrc; embeds faceSrc in the 3D spec; hashes face bytes", () => {
+    const s = validFixture();
+    s.scenes[0].elements.push({ type: "scene3d", id: "c3", primitive: "card", faceSrc: "https://x.com/f.png", position: { anchor: "center" }, width: 70, height: 48 } as never);
+    expect(validateScore(s).ok).toBe(false);
+    (s.scenes[0].elements[s.scenes[0].elements.length - 1] as { faceSrc: string }).faceSrc = "assets/face.png";
+    const v = validateScore(s);
+    expect(v.ok).toBe(true);
+    // compile inlines face bytes as a data: URI (WebGL rejects file:// siblings);
+    // missing files fail loudly at compile AND at hash time
+    expect(() => compile((v as { score: ScoreT }).score, "/nonexistent-dir")).toThrow(/faceSrc not found/);
+    const os = require("node:os");
+    const fs = require("node:fs");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "chitra-face-"));
+    fs.mkdirSync(path.join(dir, "assets"), { recursive: true });
+    // 1x1 PNG
+    fs.writeFileSync(path.join(dir, "assets/face.png"), Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
+    const html = compile((v as { score: ScoreT }).score, dir).html;
+    expect(html).toContain('"faceData":"data:image/png;base64');
+    expect(() => sceneHash((v as { score: ScoreT }).score, 0, "/nonexistent-dir")).toThrow(/asset not found/);
+  });
+});

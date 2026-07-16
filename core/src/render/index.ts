@@ -51,7 +51,7 @@ const ENCODE = {
  * markup changes, GSAP upgrades). Part of every scene hash — without it the
  * cache serves frames compiled by an older compiler.
  */
-export const COMPILER_CACHE_VERSION = "10";
+export const COMPILER_CACHE_VERSION = "11";
 
 /** Content digest of a file, memoized on (path, mtime, size) — video files are
  *  tens of MB and sceneHash runs per scene per render. */
@@ -76,6 +76,7 @@ function assetDigests(score: ScoreT, sceneIndex: number, projectDir: string): Re
     const scene = score.scenes[idx];
     if (!scene) continue;
     const srcs = scene.elements.filter((e) => e.type === "image" || e.type === "video" || e.type === "figure").map((e) => (e as { src: string }).src);
+    for (const e of scene.elements) if (e.type === "scene3d" && e.faceSrc) srcs.push(e.faceSrc);
     if (scene.background === "image" && scene.backgroundImage) srcs.push(scene.backgroundImage);
     for (const a of scene.choreography) if (a.sfx) srcs.push(a.sfx.src);
     for (const src of srcs) {
@@ -189,7 +190,7 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
   // deterministic (GPU output varies by hardware).
   const has3d = score.scenes.some((s) => s.elements.some((e) => e.type === "scene3d"));
   const flags = has3d
-    ? [...DETERMINISTIC_FLAGS, "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
+    ? [...DETERMINISTIC_FLAGS, "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
     : DETERMINISTIC_FLAGS;
   const browser = await puppeteer.launch({ headless: true, args: flags });
   const page = await browser.newPage();

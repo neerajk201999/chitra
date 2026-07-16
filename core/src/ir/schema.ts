@@ -197,6 +197,16 @@ const Scene3dElement = z.object({
   envTint: z.enum(["primary", "accent", "neutral"]).default("accent"),
   metalness: z.number().min(0).max(1).default(0.5),
   roughness: z.number().min(0.05).max(1).default(0.3),
+  /** Branded face texture (target-film T2): a project-relative image applied to
+   *  the primitive's front face (both caps for coin). Design the face in HTML
+   *  (figure), render it with `chitra frame`, point faceSrc at the PNG. */
+  faceSrc: z
+    .string()
+    .min(1)
+    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+      message: "faceSrc must be a project-relative image path",
+    })
+    .optional(),
   spinDeg: z.number().min(0).max(40).default(16), // gentle oscillation amplitude, degrees
   tiltDeg: z.number().min(-30).max(30).default(12),
   exposure: z.number().min(0.5).max(2.5).default(1.4),

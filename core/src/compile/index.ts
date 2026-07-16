@@ -35,6 +35,16 @@ function gsapSource(): string {
   return readFileSync(require_.resolve("gsap/dist/gsap.min.js"), "utf8");
 }
 
+/** Inline a scene3d face image as a data: URI (WebGL-safe on file:// pages).
+ *  Missing files fail loudly at compile — same rule as every asset. */
+function faceDataUri(src: string, projectDir: string): string {
+  const file = path.resolve(projectDir, src);
+  if (!existsSync(file)) throw new Error(`scene3d faceSrc not found: ${src} (resolved to ${file})`);
+  const ext = path.extname(file).toLowerCase();
+  const mime = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : "image/png";
+  return `data:${mime};base64,${readFileSync(file).toString("base64")}`;
+}
+
 /** ADR-0010: Three.js is ESM-only; inline the unminified module and reference
  *  its exported classes by bare name in one module scope. Only inlined when a
  *  scene3d element is present (1.2MB). */
@@ -632,6 +642,10 @@ export function compile(score: ScoreT, projectDir = "."): CompileResult {
         scene3dSpecs.push({
           key: `${sc.id}--${el.id}`,
           primitive: el.primitive,
+          // faceSrc is inlined as a data: URI — on file:// pages WebGL treats
+          // sibling file:// images as cross-origin and refuses texture upload
+          // (SecurityError in texSubImage2D). data: URIs are same-origin-safe.
+          faceData: el.faceSrc ? faceDataUri(el.faceSrc, projectDir) : null,
           base: colorOf(p, el.baseColor),
           env: el.envTint === "neutral" ? "#8a8a8a" : colorOf(p, el.envTint),
           metalness: el.metalness,
@@ -855,14 +869,14 @@ window.__chitra = {
 </script>
 ${hasScene3d ? `<script type="module">
 ${threeSource()}
-(function(){
+(async function(){
   window.__three3d = [];
   var SPECS3D = ${JSON.stringify(scene3dSpecs)};
   try {
     // Shared procedural environment per env tint (crimson/gold/neutral studio).
-    SPECS3D.forEach(function (s) {
+    for (const s of SPECS3D) {
       var canvas = document.querySelector('canvas[data-3d="' + s.key + '"]');
-      if (!canvas) return;
+      if (!canvas) continue;
       var renderer = new WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
       renderer.setSize(s.w, s.h, false);
       renderer.toneMapping = ACESFilmicToneMapping;
@@ -891,7 +905,27 @@ ${threeSource()}
       else if (s.primitive === "slab") geo = new BoxGeometry(2.2, 3.2, 0.14);
       else geo = new BoxGeometry(3.4, 2.14, 0.12); // card
       var mat = new MeshPhysicalMaterial({ color: parseInt(s.base.slice(1), 16), metalness: s.metalness, roughness: s.roughness, clearcoat: 1.0, clearcoatRoughness: 0.25, emissive: 0x0a0506, emissiveIntensity: 0.35 });
-      var mesh = new Mesh(geo, mat);
+      var mesh;
+      if (s.faceData) {
+        // Branded face (target-film T2): HTML-designed face rasterized to an
+        // image, textured onto the front so highlights travel over the brand.
+        // data: URI (inlined at compile) — file:// sibling images are treated
+        // as cross-origin by WebGL and rejected at texture upload.
+        var img = new Image();
+        await new Promise(function (res, rej) {
+          img.onload = res;
+          img.onerror = function () { rej(new Error("scene3d face image failed to decode")); };
+          img.src = s.faceData;
+        });
+        var tex = new Texture(img);
+        tex.needsUpdate = true;
+        tex.colorSpace = SRGBColorSpace;
+        tex.anisotropy = 8;
+        var faceMat = new MeshPhysicalMaterial({ map: tex, metalness: Math.min(s.metalness, 0.35), roughness: Math.max(s.roughness, 0.35), clearcoat: 1.0, clearcoatRoughness: 0.3 });
+        mesh = s.primitive === "coin" ? new Mesh(geo, [mat, faceMat, faceMat]) : new Mesh(geo, [mat, mat, mat, mat, faceMat, mat]);
+      } else {
+        mesh = new Mesh(geo, mat);
+      }
       if (s.primitive === "coin") mesh.rotation.x = Math.PI / 2;
       scene.add(mesh);
       var tilt = s.tiltDeg * Math.PI / 180, spin = s.spinDeg * Math.PI / 180;
@@ -903,7 +937,7 @@ ${threeSource()}
         renderer.render(scene, cam);
       });
       window.__three3d[window.__three3d.length - 1](0);
-    });
+    }
     window.__three3dReady = true;
   } catch (e) { window.__three3dError = String(e && e.message || e); window.__three3dReady = true; }
 })();
