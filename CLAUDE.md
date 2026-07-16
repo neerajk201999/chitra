@@ -6,8 +6,9 @@ You are working on Chitra: the AI-native operating system for cinematic video cr
 2. **[docs/roadmap/roadmap.md](docs/roadmap/roadmap.md)** — current milestone, exit gates, standing risks. Read always; your task must serve the current milestone.
 3. **[docs/architecture/system-overview.md](docs/architecture/system-overview.md)** + the ADRs in [docs/decisions/](docs/decisions/) — how the system works and why. Read before any design or implementation work.
 4. **[docs/standards/engineering-standards.md](docs/standards/engineering-standards.md)** — code, prompt, and review standards. Read before writing code or skills.
-5. **[docs/motion/motion-language.md](docs/motion/motion-language.md)** — the encoded taste. Read before touching anything that affects rendered output, gates, or critic rubrics.
-6. **[docs/research/00-index.md](docs/research/00-index.md)** — competitor analyses. Read when making competitive or architectural claims.
+5. **[docs/creative/creative-constitution.md](docs/creative/creative-constitution.md)** — the encoded WHY (narrative, rhythm, camera, type, colour, composition, brand; CC-* rules). Read before ANY creative decision (brief, storyboard, direction, critique). This is the taste model. (ADR-0012)
+6. **[docs/motion/motion-language.md](docs/motion/motion-language.md)** — the encoded HOW (motion mechanics; MO-* rules). Read before touching rendered output, gates, or critic rubrics.
+7. **[docs/research/00-index.md](docs/research/00-index.md)** — competitor analyses. Read when making competitive or architectural claims.
 
 ## Working rules
 

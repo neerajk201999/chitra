@@ -1,6 +1,8 @@
 # Roadmap — MVP to v1.0
 
-**Status (2026-07-15): M0 ✅ · M1 ✅ · M2 partial · M3 partial.** Each milestone ships a working repository state and is independently valuable. See [known-issues.md](known-issues.md) for the honest ledger.
+**Status (2026-07-16): M0 ✅ · M1 ✅ · M2 partial · M3 partial · M4 (Creative Intelligence) STARTED.** See [known-issues.md](known-issues.md) for the honest ledger.
+
+> **Course correction (2026-07-16, ADR-0012).** Two outside reviews + our own VISION confirmed a drift: ADR-0006→0011 were all renderer/expressiveness features (media, video, figures, particles, 3D, audio) while the creative-intelligence layer VISION calls "the product" (Direction → Design → taste) stayed unbuilt and the Direction tier stayed orphaned. **Renderer is now declared feature-complete unless a concrete target film exposes a specific missing capability.** Center of gravity shifts to M4. Honest self-scoring: Rendering ~90%, Determinism ~100%, Motion IR ~90%, Quality gates ~80% (leaks — see known-issues), **Creative Direction ~20%, Narrative ~10%, Taste model ~20%, Storyboarding ~10%, Brand ~10%.** The low numbers are the whole game now.
 
 ## M0 — Memory & thesis ✅ 2026-07-14
 Competitor reverse-engineering (6 reports + stack validation, docs/research/), vision, ADR-0001…0005, motion language seed, standards, roadmap.
@@ -44,6 +46,19 @@ Remaining honest gaps vs Remotion: keyframes/masks/nested comps (curated-preset 
 
 ## M5 — Ecosystem → v1.0
 Brand ingestion ("BRAND.md for motion": logo, palette, type, motion personality → tokens), style/block registry with `chitra add`, remaining workflows (feature-demo, PR-to-video, screen-recording ingestion via video-use patterns), distributed rendering (chunk-and-concat), WebCodecs backend spike.
+
+
+## M4 — Creative Intelligence (the missing brain) — STARTED 2026-07-16
+*Goal: Chitra makes the creative decisions a top director + motion designer would — before rendering. The pipeline begins at intent, not at Motion IR (ADR-0012).*
+Landed: ADR-0012 (creative pipeline architecture) · **docs/creative/creative-constitution.md** (the encoded WHY across narrative/rhythm/camera/type/colour/composition/brand — CC-* rules) · Direction tier wired into the CLI (`chitra plan`) · **Brief↔Score conformance gate** (`chitra conform`; CC-CONF-1..5: register match, no dropped beat, no scene without a WHY, hero moments executed, pacing peak gets air) · 37 tests.
+Remaining (priority order):
+- **Reference Decomposer**: reference video → measurable Style DNA (camera, rhythm, typography, palette, motion, narrative, emotion). Unlocks "make it like this reference."
+- **Creative Director engine**: product brief → cinematic concept (emotion, arc, register) as a typed Brief IR the agent fills and gates check.
+- **Storyboard IR tier**: shot list (intent, hero, camera, type, timing) between Brief and Score, with conformance gates both directions.
+- **Style Memory**: learn from accepted human revisions (diff → style delta) so future films inherit taste and brand stay consistent.
+- **Creative QA**: promote CC-* constitution principles to calibrated gates (narrative/composition/pacing/rhythm), beyond motion mechanics.
+- **Then ChitraBench** end-to-end (benchmarking a creative system, not a renderer).
+- **Exit gate:** on a fixed brief + reference, blind evaluators cannot distinguish Chitra's creative *decisions* (storyboard, pacing, type, palette choices) from a professional's on ≥ the ChitraBench bar.
 
 ## Standing risks (tracked here, reviewed each milestone)
 1. **Taste ceiling** — encoded rules may plateau below "Apple-grade." Mitigation: ChitraBench measures it honestly; revision loop + growing rule registry; human escalation is a feature, not a failure.

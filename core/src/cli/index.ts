@@ -8,8 +8,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { Command } from "commander";
-import { validateScore, type ScoreT } from "../ir/schema.js";
-import { runStaticGates, runFrameGates, summarize, type Finding } from "../gates/index.js";
+import { validateScore, validateDirection, type ScoreT, type DirectionT } from "../ir/schema.js";
+import { runStaticGates, runFrameGates, runConformance, summarize, type Finding } from "../gates/index.js";
 import { openSession, renderScore, type Quality } from "../render/index.js";
 import { generateEvidence } from "../evidence/index.js";
 import { fetchAsset, snapPage, writeAssetLog } from "../assets/index.js";
@@ -54,6 +54,43 @@ function printFindings(findings: Finding[], json: boolean) {
   console.log(`\n${s.releasable ? "✔" : "✖"} ${s.p1} P1 · ${s.p2} P2 · ${s.p3} P3 — ${s.releasable ? "gates green" : "P1 findings block release"}`);
   return s;
 }
+
+function loadDirection(file: string): DirectionT {
+  const abs = path.resolve(file);
+  if (!existsSync(abs)) fail(`No such file: ${abs}`);
+  let data: unknown;
+  try { data = JSON.parse(readFileSync(abs, "utf8")); } catch (e) { fail(`Invalid JSON in ${file}: ${(e as Error).message}`); }
+  const v = validateDirection(data);
+  if (!v.ok) {
+    console.error(`✖ Direction schema validation failed (${v.issues.length}):`);
+    for (const i of v.issues) console.error(`  [IR] ${i.path}: ${i.message}`);
+    process.exit(2);
+  }
+  return v.direction;
+}
+
+program
+  .command("plan")
+  .argument("<direction>", "direction (creative brief) JSON file")
+  .description("Validate a Direction/Creative-Brief (ADR-0012 tier 1: the WHY) — narrative arc, tone, audience, per-beat intent")
+  .action((file: string) => {
+    const d = loadDirection(file);
+    console.log(`✔ direction valid — "${d.title}" (${d.register}), ${d.scenes.length} beats\n  arc: ${d.narrativeArc}`);
+  });
+
+program
+  .command("conform")
+  .argument("<direction>", "direction JSON file")
+  .argument("<score>", "score JSON file")
+  .option("--json", "machine-readable output")
+  .description("Creative conformance (ADR-0012): does the Score honor the Direction? Traces every beat, hero moment, and pacing peak.")
+  .action((dirFile: string, scoreFile: string, opts: { json?: boolean }) => {
+    const direction = loadDirection(dirFile);
+    const { score } = loadScore(scoreFile);
+    const findings = runConformance(direction, score);
+    const s = printFindings(findings, !!opts.json);
+    process.exit(s.releasable ? 0 : 1);
+  });
 
 program
   .command("validate")

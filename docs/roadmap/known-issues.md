@@ -12,3 +12,12 @@ Honest ledger. Each item is scheduled (milestone) or explicitly accepted. Fixed 
 8. **Distribution/parallel rendering unimplemented** (design in ADR-0002 consequences; M5).
 9. **Ctrl-C mid-render** may briefly orphan the vendored Chrome process (no explicit signal handler).
 10. **Example corpus is 2 scores**; agents compose better from a gallery (M3).
+
+## Integrity findings from the 2026-07-16 due-diligence audit (docs open until fixed)
+- **A1. Figure text bypasses the text gates (P1 integrity).** `textRegions()` only reads top-level IR text; text authored inside a `figure` fragment is NOT size/contrast/safe-zone/reading-time/overlap checked. This contradicted ADR-0008's "gates run on its pixels" wording (now corrected). The moat is "measurable quality" — this is a real hole. Fix: register figure DOM text after sanitization, enforce token-only styling with a real CSS parser. (M4 Creative QA.)
+- **A2. Three-instant gate sampling misses transient violations (P1).** Frame gates sample 3 instants/scene; a headline can enter off-safe-zone and settle, passing green. Fix: sample animation boundaries + interval checks.
+- **A3. `chitra render` doesn't run frame gates unless the user ran `check` (P2).** Add a `chitra release` that enforces validate→check→render→evidence with a hash-keyed receipt.
+- **A4. Packaging: `main` points at a missing root file, no `exports` map, version identity (0.1.0 vs README 0.2.0) inconsistent (P1 launch-blocker).**
+- **A5. Audio −14 LUFS is a target, not a verified invariant** — normalizes the bed, doesn't measure the final mux. Add two-pass final-loudness measurement/gate.
+- **A6. Determinism is same-machine-uninterrupted only.** Interrupted/resumed renders diverged slightly (SSIM 0.9987); cross-machine untested. Scope the claim; add interruption + golden-frame CI (M5).
+- **A7. Critic is unvalidated** — 4 author-biased cases. Needs ≥20 independent-labelled cases before any aesthetic-quality claim.

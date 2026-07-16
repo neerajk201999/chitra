@@ -5,7 +5,7 @@
  * Severity: P1 blocks release, P2 should fix, P3 note.
  */
 import sharp from "sharp";
-import type { SceneT, ScoreT } from "../ir/schema.js";
+import type { SceneT, ScoreT, DirectionT } from "../ir/schema.js";
 import { resolveSceneTimeline, totalDurationMs } from "../compile/index.js";
 import {
   CHOREOGRAPHY,
@@ -475,6 +475,56 @@ export async function runFrameGates(score: ScoreT, session: RenderSession): Prom
         f.push({ ruleId: "MO-TYPE-2", severity: "P1", path: `scenes[${si}].elements[${ei}]`, message: `Palette contrast ${ratio.toFixed(1)}:1 for "${el.content.slice(0, 30)}" (min ${min}:1)` });
     });
   });
+
+  return f;
+}
+
+/**
+ * Creative conformance (ADR-0012): does the executed Score honor the Direction?
+ * The first deterministic gate of the creative-intelligence layer — the WHY
+ * (Direction) governing the HOW (Score), checkable, IR-addressed. CC-* rule IDs
+ * trace to the Creative Constitution.
+ */
+export function runConformance(direction: DirectionT, score: ScoreT): Finding[] {
+  const f: Finding[] = [];
+  // CC-CONF-1: plan and execution must agree on the register.
+  if (direction.register !== score.meta.register)
+    f.push({ ruleId: "CC-CONF-1", severity: "P1", path: "meta.register", message: `Direction register "${direction.register}" ≠ Score register "${score.meta.register}" — the plan and the execution disagree on the format` });
+
+  const dirIds = new Set(direction.scenes.map((s) => s.id));
+  const scoreIds = new Set(score.scenes.map((s) => s.id));
+
+  // CC-CONF-2: every directed beat must be executed (no dropped intent).
+  direction.scenes.forEach((ds, i) => {
+    if (!scoreIds.has(ds.id))
+      f.push({ ruleId: "CC-CONF-2", severity: "P1", path: `direction.scenes[${i}]`, message: `Directed beat "${ds.id}" (${ds.narrativeRole}) has no Score scene — a planned beat was dropped` });
+  });
+
+  // CC-CONF-3: every executed scene must trace to a directed beat (no scene
+  // without a WHY — CC-CORE-1 made structural).
+  score.scenes.forEach((ss, i) => {
+    if (!dirIds.has(ss.id))
+      f.push({ ruleId: "CC-CONF-3", severity: "P2", path: `scenes[${i}]`, message: `Score scene "${ss.id}" traces to no directed beat — it exists without a stated reason (add it to the Direction or cut it)` });
+  });
+
+  // CC-CONF-4: a declared hero moment must be executed as a hero-role element.
+  direction.scenes.forEach((ds, i) => {
+    if (!ds.heroMoment) return;
+    const scene = score.scenes.find((s) => s.id === ds.id);
+    if (scene && !scene.elements.some((e) => (e as { role?: string }).role === "hero"))
+      f.push({ ruleId: "CC-CONF-4", severity: "P2", path: `scenes[${score.scenes.indexOf(scene)}]`, message: `Beat "${ds.id}" declares a hero moment ("${ds.heroMoment}") but its Score scene has no hero-role element — the peak wasn't executed` });
+  });
+
+  // CC-CONF-5 (CC-RHY-2/CC-NARR-4 proxy): pacingWeight should track relative
+  // hold. The beat with the highest pacingWeight should not be among the
+  // shortest scenes — the emphasized moment must get air.
+  if (direction.scenes.length >= 3) {
+    const peak = direction.scenes.reduce((a, b) => (b.pacingWeight > a.pacingWeight ? b : a));
+    const durs = score.scenes.map((s) => s.durationMs).sort((a, b) => a - b);
+    const peakScene = score.scenes.find((s) => s.id === peak.id);
+    if (peak.pacingWeight >= 1.4 && peakScene && peakScene.durationMs <= durs[Math.floor(durs.length / 3)])
+      f.push({ ruleId: "CC-CONF-5", severity: "P3", path: `scenes[${score.scenes.indexOf(peakScene)}].durationMs`, message: `Beat "${peak.id}" is the pacing peak (weight ${peak.pacingWeight}) but is among the shortest scenes — the emphasized moment isn't getting air (CC-RHY-2)` });
+  }
 
   return f;
 }

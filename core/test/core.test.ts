@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateScore, type ScoreT } from "../src/ir/schema.js";
 import { compile, resolveSceneTimeline, totalDurationMs } from "../src/compile/index.js";
-import { runStaticGates } from "../src/gates/index.js";
+import { runStaticGates, runConformance } from "../src/gates/index.js";
 import { sceneHash } from "../src/render/index.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -345,5 +345,47 @@ describe("real 3D scene (ADR-0010)", () => {
   it("MO-3D-1 flags agitated spin", () => {
     expect(runStaticGates(with3d({ spinDeg: 38 })).some((x) => x.ruleId === "MO-3D-1")).toBe(true);
     expect(runStaticGates(with3d({ spinDeg: 16 })).some((x) => x.ruleId === "MO-3D-1")).toBe(false);
+  });
+});
+
+describe("creative conformance (ADR-0012)", () => {
+  const dir = {
+    irVersion: "0.1.0", tier: "direction", title: "T", register: "brand-film",
+    logline: "a line long enough", narrativeArc: "setup then tension then peak then release",
+    tone: ["assured"], audience: "builders",
+    scenes: [
+      { id: "open", narrativeRole: "cold open state tension", shotIntent: "feel the gap", pacingWeight: 1 },
+      { id: "peak", narrativeRole: "the turn to capability", shotIntent: "confidence lands", heroMoment: "the claim lands", pacingWeight: 1.5 },
+    ],
+  };
+  const baseScore = () => ({
+    irVersion: "0.1.0", tier: "score",
+    meta: { title: "T", register: "brand-film", width: 1920, height: 1080, fps: 30, seed: 1, safeZone: "16x9-standard" },
+    style: JSON.parse(JSON.stringify(validFixture().style)),
+    scenes: [
+      { id: "open", reason: "opens the film", durationMs: 3000, background: "bg", elements: [{ type: "text", id: "t1", role: "hero", textRole: "display", content: "Gap." }], choreography: [] },
+      { id: "peak", reason: "the peak", durationMs: 4000, background: "bg", elements: [{ type: "text", id: "t2", role: "hero", textRole: "headline", content: "Answered." }], choreography: [] },
+    ],
+  });
+  it("passes when the score honors the direction", () => {
+    const v = validateScore(baseScore());
+    expect(v.ok).toBe(true);
+    expect(runConformance(dir as never, (v as { score: unknown }).score as never).filter((x: {severity:string}) => x.severity !== "P3")).toEqual([]);
+  });
+  it("CC-CONF-2 catches a dropped directed beat", () => {
+    const s = baseScore(); s.scenes = s.scenes.filter((x) => x.id !== "peak");
+    const v = validateScore(s);
+    const found = runConformance(dir as never, (v as { score: unknown }).score as never);
+    expect(found.some((x: {ruleId:string}) => x.ruleId === "CC-CONF-2")).toBe(true);
+  });
+  it("CC-CONF-1 catches a register mismatch", () => {
+    const s = baseScore(); s.meta.register = "social-short";
+    const v = validateScore(s);
+    expect(runConformance(dir as never, (v as { score: unknown }).score as never).some((x: {ruleId:string}) => x.ruleId === "CC-CONF-1")).toBe(true);
+  });
+  it("CC-CONF-4 catches an unexecuted hero moment", () => {
+    const s = baseScore(); (s.scenes[1].elements[0] as { role: string }).role = "support";
+    const v = validateScore(s);
+    expect(runConformance(dir as never, (v as { score: unknown }).score as never).some((x: {ruleId:string}) => x.ruleId === "CC-CONF-4")).toBe(true);
   });
 });
