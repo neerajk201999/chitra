@@ -138,6 +138,23 @@ program
       printFindings(staticFindings, !!opts.json);
       fail("P1 findings block render — fix them or pass --force");
     }
+    // A3: high-quality is the delivery path — it must not ship a video with
+    // rendered-frame P1 failures. Run the full frame gates first (drafts skip
+    // this so iteration stays fast). --force still overrides.
+    if (opts.quality === "high" && !opts.force) {
+      const session = await openSession(score, projectDir, path.join(projectDir, ".chitra-cache"));
+      let frameFindings: Finding[];
+      try {
+        frameFindings = await runFrameGates(score, session);
+      } finally {
+        await session.close();
+      }
+      const p1 = frameFindings.filter((x) => x.severity === "P1");
+      if (p1.length) {
+        printFindings(p1, !!opts.json);
+        fail("Rendered-frame P1 findings block a high-quality render — fix them or pass --force");
+      }
+    }
     const r = await renderScore(score, projectDir, opts.out, {
       quality: opts.quality as Quality,
       onProgress: opts.json ? undefined : (d, t) => process.stdout.write(`\r  frame ${d}/${t}`),
@@ -150,8 +167,15 @@ program
       rendered: r.renderedFrames,
       fromCache: r.cachedFrames,
       wallSeconds: +(r.wallMs / 1000).toFixed(1),
+      loudness: r.loudness,
     };
-    console.log(opts.json ? JSON.stringify(out, null, 2) : `✔ ${out.out} — ${out.frames} frames (${out.fromCache} cached) in ${out.wallSeconds}s`);
+    if (opts.json) {
+      console.log(JSON.stringify(out, null, 2));
+    } else {
+      console.log(`✔ ${out.out} — ${out.frames} frames (${out.fromCache} cached) in ${out.wallSeconds}s`);
+      if (r.loudness)
+        console.log(`  audio: ${r.loudness.integratedLufs.toFixed(1)} LUFS, peak ${r.loudness.truePeakDb.toFixed(1)} dBTP${r.loudness.withinSpec ? "" : "  ⚠ outside −14 LUFS / −1.5 dBTP spec"}`);
+    }
   });
 
 program

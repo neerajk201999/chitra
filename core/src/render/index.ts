@@ -39,6 +39,28 @@ const DETERMINISTIC_FLAGS = [
   "--no-sandbox",
 ];
 
+/** A9: track live browsers so a Ctrl-C / kill closes the vendored Chrome instead
+ *  of orphaning it. Handlers install once, on first session. */
+const openBrowsers = new Set<Browser>();
+let signalsInstalled = false;
+function installSignalHandlers() {
+  if (signalsInstalled) return;
+  signalsInstalled = true;
+  const shutdown = (sig: NodeJS.Signals) => {
+    for (const b of openBrowsers) {
+      try {
+        b.process()?.kill("SIGKILL");
+      } catch {
+        /* best-effort */
+      }
+    }
+    openBrowsers.clear();
+    process.exit(sig === "SIGINT" ? 130 : 143);
+  };
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+}
+
 export type Quality = "draft" | "standard" | "high";
 const ENCODE = {
   draft: { preset: "ultrafast", crf: 28 },
@@ -195,7 +217,9 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
   const flags = has3d
     ? [...DETERMINISTIC_FLAGS, "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
     : DETERMINISTIC_FLAGS;
+  installSignalHandlers();
   const browser = await puppeteer.launch({ headless: true, args: flags });
+  openBrowsers.add(browser);
   const page = await browser.newPage();
   await page.setViewport({ width: compiled.width, height: compiled.height, deviceScaleFactor: 1 });
   await page.goto(`file://${pageFile}`, { waitUntil: "load" });
@@ -223,6 +247,7 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
     compiled,
     pageFile,
     async close() {
+      openBrowsers.delete(browser);
       await browser.close();
     },
     async seekAndCapture(ms: number) {
@@ -243,6 +268,8 @@ export interface RenderResult {
   cachedFrames: number;
   durationMs: number;
   wallMs: number;
+  /** A5: measured integrated loudness of the FINAL mux (null if no audio). */
+  loudness: { integratedLufs: number; truePeakDb: number; withinSpec: boolean } | null;
 }
 
 export interface RenderOptions {
@@ -270,6 +297,7 @@ export async function renderScore(
     let rendered = 0;
     let cached = 0;
     let done = 0;
+    let loudness: RenderResult["loudness"] = null;
     const framePaths: string[] = [];
     const totalFrames = Math.round((compiled.durationMs / 1000) * fps);
 
@@ -313,6 +341,7 @@ export async function renderScore(
         sfx,
       });
       rmSync(silent, { force: true });
+      loudness = measureLoudness(outFile); // A5: verify the FINAL mux, not the bed
     } else {
       await pipeEncode(framePaths, fps, outFile, enc.preset, enc.crf);
     }
@@ -338,10 +367,27 @@ export async function renderScore(
       cachedFrames: cached,
       durationMs: compiled.durationMs,
       wallMs: Date.now() - t0,
+      loudness,
     };
   } finally {
     await session.close();
   }
+}
+
+/** A5 / MO-AUD-1: measure the FINAL mux's integrated loudness + true peak via
+ *  ffmpeg's ebur128 filter. Target −14 LUFS / −1.5 dBTP (streaming standard);
+ *  within-spec allows ±1.0 LUFS and TP ≤ −1.0 dBTP (short material drifts). */
+function measureLoudness(file: string): RenderResult["loudness"] {
+  const r = spawnSync("ffmpeg", ["-nostats", "-i", file, "-filter_complex", "ebur128=peak=true", "-f", "null", "-"], { encoding: "utf8" });
+  const err = (r.stderr ?? "") + (r.stdout ?? "");
+  const i = err.match(/I:\s*(-?\d+(?:\.\d+)?)\s*LUFS/g);
+  const tp = err.match(/Peak:\s*(-?\d+(?:\.\d+)?)\s*dBFS/g);
+  const lastNum = (arr: RegExpMatchArray | null) => (arr ? parseFloat(arr[arr.length - 1].match(/(-?\d+(?:\.\d+)?)/)![1]) : NaN);
+  const integratedLufs = lastNum(i);
+  const truePeakDb = lastNum(tp);
+  if (!Number.isFinite(integratedLufs)) return null;
+  const withinSpec = Math.abs(integratedLufs + 14) <= 1.0 && (!Number.isFinite(truePeakDb) || truePeakDb <= -1.0);
+  return { integratedLufs, truePeakDb, withinSpec };
 }
 
 export interface SfxEvent {

@@ -105,7 +105,7 @@ const ImageElement = z.object({
   src: z
     .string()
     .min(1)
-    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/") && !s.split("/").includes(".."), {
       message: "image src must be a project-relative path (use `chitra fetch <url>` to download assets first)",
     }),
   fit: z.enum(["cover", "contain"]).default("cover"),
@@ -124,7 +124,7 @@ const VideoElement = z.object({
   src: z
     .string()
     .min(1)
-    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/") && !s.split("/").includes(".."), {
       message: "video src must be a project-relative path (acquire clips first, e.g. ffmpeg trim of a recording)",
     }),
   startMs: z.number().int().min(0).default(0), // offset into the source clip
@@ -165,7 +165,7 @@ const FigureElement = z.object({
     .string()
     .min(1)
     .regex(/\.html$/, "figure src must be an .html fragment")
-    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/") && !s.split("/").includes(".."), {
       message: "figure src must be a project-relative .html fragment",
     }),
   position: Position.default({ anchor: "center" }),
@@ -203,7 +203,7 @@ const Scene3dElement = z.object({
   faceSrc: z
     .string()
     .min(1)
-    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+    .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/") && !s.split("/").includes(".."), {
       message: "faceSrc must be a project-relative image path",
     })
     .optional(),
@@ -305,7 +305,7 @@ export const Animation = z.object({
       src: z
         .string()
         .min(1)
-        .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/"), {
+        .refine((s) => !/^[a-z][a-z0-9+.-]*:\/\//i.test(s) && !s.startsWith("/") && !s.split("/").includes(".."), {
           message: "sfx src must be a project-relative path (generate a kit with `chitra sfx-kit`)",
         }),
       gainDb: z.number().min(-40).max(6).default(-14),
