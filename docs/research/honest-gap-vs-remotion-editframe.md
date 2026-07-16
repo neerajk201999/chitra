@@ -15,15 +15,17 @@ limitation, and it matches what they do. This is not where we lose.
 
 ## Fundamental gaps (real capability we do not have)
 
-### 1. Real 3D (WebGL / Three.js). THE visual gap.
+### 1. Real 3D (WebGL / Three.js). CLOSED 2026-07-15 (ADR-0010).
 The reference card is a 3D render — true perspective, specular highlights that
 travel as it rotates, depth of field, soft shadows. We fake it with CSS
 `perspective` + layered gradients, which reads flat next to the real thing.
 - **Remotion**: `@remotion/three` embeds a real Three.js canvas, frame-driven.
 - **Us**: figures strip all scripts (determinism + safety), so no WebGL today.
-- **Honest verdict**: this is why we cannot make *this* reference "exactly." It
-  is not impossible — Three.js driven by our seek clock is fully deterministic
-  (same principle as GSAP). It is a capability we have not built. → ADR-0010.
+- **Status**: BUILT. `scene3d` element (card/coin/slab primitives), Three.js
+  inlined and driven by our seek clock, SwiftShader software-GL for
+  cross-hardware determinism. Same-machine byte-identical render verified.
+  Cross-machine golden-frame CI remains M5. Remaining 3D work is curated-
+  primitive breadth (more shapes, GLTF import), not architecture.
 
 ### 2. Audio-reactive / scored motion. THE timing gap.
 We render silent, then lay a track over the top with a fade. Motion never knows

@@ -323,3 +323,27 @@ describe("audio-reactive timeline (ADR-0011)", () => {
     expect(runStaticGates(s).some((x) => x.ruleId === "MO-AUD-4" && x.severity === "P1")).toBe(true);
   });
 });
+
+describe("real 3D scene (ADR-0010)", () => {
+  const with3d = (over: object = {}) => {
+    const s = validFixture();
+    s.scenes[0].elements.push({ type: "scene3d", id: "card3d", primitive: "card", baseColor: "surface", envTint: "accent", position: { anchor: "center", x: 50, y: 45 }, width: 70, height: 48, ...over } as never);
+    const v = validateScore(s);
+    return v.ok ? v.score : s;
+  };
+  it("inlines Three + a canvas only when a scene3d is present; deterministic compile", () => {
+    const plain = compile(validFixture()).html;
+    expect(plain).not.toContain('data-3d=');
+    expect(plain).not.toContain("PMREMGenerator");
+    const s = with3d();
+    const a = compile(s).html, b = compile(s).html;
+    expect(a).toBe(b); // deterministic source
+    expect(a).toContain('data-3d="cold-open--card3d"');
+    expect(a).toContain("WebGLRenderer");
+    expect(a).toContain("window.__three3d");
+  });
+  it("MO-3D-1 flags agitated spin", () => {
+    expect(runStaticGates(with3d({ spinDeg: 38 })).some((x) => x.ruleId === "MO-3D-1")).toBe(true);
+    expect(runStaticGates(with3d({ spinDeg: 16 })).some((x) => x.ruleId === "MO-3D-1")).toBe(false);
+  });
+});

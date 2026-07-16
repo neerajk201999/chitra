@@ -1,6 +1,6 @@
 # ADR-0010 — WebGL scene element (real 3D) — SCOPED, NOT YET BUILT
 
-**Status:** proposed · 2026-07-15 (honest placeholder — no code yet)
+**Status:** accepted · building 2026-07-15. Determinism spike PASSED: headless Chrome with `--use-angle=swiftshader` renders Three.js byte-identically on re-render and produces a genuine 3D card (perspective, clearcoat, PMREM environment). WebGL flags added conditionally (only when a scene3d is present) so 2D renders stay byte-identical to before.
 
 ## Context
 

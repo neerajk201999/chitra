@@ -185,6 +185,26 @@ const CursorElement = z.object({
   scale: z.number().min(0.6).max(2).default(1),
 });
 
+/** ADR-0010: real 3D via a curated Three.js scene driven by our seek clock.
+ *  Authors pick a primitive + params; we own the scene code (no user script). */
+const Scene3dElement = z.object({
+  type: z.literal("scene3d"),
+  id,
+  role: z.enum(["hero", "support"]).default("hero"),
+  primitive: z.enum(["card", "coin", "slab"]).default("card"),
+  // Palette-driven look; hexes resolved from style at compile.
+  baseColor: z.enum(["surface", "primary", "accent", "text"]).default("surface"),
+  envTint: z.enum(["primary", "accent", "neutral"]).default("accent"),
+  metalness: z.number().min(0).max(1).default(0.5),
+  roughness: z.number().min(0.05).max(1).default(0.3),
+  spinDeg: z.number().min(0).max(40).default(16), // gentle oscillation amplitude, degrees
+  tiltDeg: z.number().min(-30).max(30).default(12),
+  exposure: z.number().min(0.5).max(2.5).default(1.4),
+  position: Position.default({ anchor: "center" }),
+  width: z.number().min(10).max(140).default(70),
+  height: z.number().min(10).max(140).default(50),
+});
+
 const StatElement = z.object({
   type: z.literal("stat"),
   id,
@@ -219,6 +239,7 @@ export const Element = z.discriminatedUnion("type", [
   FigureElement,
   CursorElement,
   ParticlesElement,
+  Scene3dElement,
   StatElement,
   ChartBarElement,
 ]);

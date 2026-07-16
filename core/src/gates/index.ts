@@ -86,6 +86,15 @@ export function runStaticGates(score: ScoreT): Finding[] {
         f.push({ ruleId: "IR-CUR-1", severity: "P1", path: p(`.choreography[${ai}]`), message: `"${a.id}" (type-in) targets "${a.target}" which is ${target.type}, not text` });
     });
 
+    // MO-3D-1 (ADR-0010): a 3D subject must settle, not spin forever (perpetual
+    // rotation reads as a screensaver, not a hero). spinDeg is bounded in schema
+    // (≤40°); a scene3d marked hero should be the only hero (handled by MO-CHOR-2).
+    scene.elements.forEach((el, ei) => {
+      if (el.type !== "scene3d") return;
+      if (el.spinDeg > 30)
+        f.push({ ruleId: "MO-3D-1", severity: "P2", path: p(`.elements[${ei}]`), message: `scene3d "${el.id}" spin ${el.spinDeg}° is agitated — a hero product settles (≤30° gentle oscillation)` });
+    });
+
     // MO-PART-1 (ADR-0009): particle fields are bounded; morphTo only on particle-morph.
     scene.elements.forEach((el, ei) => {
       if (el.type !== "particles") return;

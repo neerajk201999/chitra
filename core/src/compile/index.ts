@@ -35,6 +35,16 @@ function gsapSource(): string {
   return readFileSync(require_.resolve("gsap/dist/gsap.min.js"), "utf8");
 }
 
+/** ADR-0010: Three.js is ESM-only; inline the unminified module and reference
+ *  its exported classes by bare name in one module scope. Only inlined when a
+ *  scene3d element is present (1.2MB). */
+function threeSource(): string {
+  // three's exports map blocks subpath + package.json resolution; resolve the
+  // main entry (lands in build/) and read three.module.js from that same dir.
+  const buildDir = path.dirname(require_.resolve("three"));
+  return readFileSync(path.join(buildDir, "three.module.js"), "utf8");
+}
+
 const FONT_FILES: Record<string, { pkg: string; file: string; weights: number[] }> = {
   Inter: { pkg: "@fontsource/inter", file: "inter-latin-{w}-normal.woff2", weights: [400, 500, 600] },
   "Space Grotesk": { pkg: "@fontsource/space-grotesk", file: "space-grotesk-latin-{w}-normal.woff2", weights: [400, 500, 700] },
@@ -315,6 +325,14 @@ function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: stri
         .map((d, i) => `<div class="pdot" data-phase="${rnd().toFixed(4)}" style="left:${d.x.toFixed(3)}%;top:${d.y.toFixed(3)}%;width:${ds}px;height:${ds}px;margin-left:${-ds / 2}px;margin-top:${-ds / 2}px;background:${col};box-shadow:0 0 ${(ds * 1.5).toFixed(1)}px ${col};" data-i="${i}"></div>`)
         .join("");
       return wrap(`<div class="pfield" style="position:relative;width:${w}px;height:${h}px;">${dotDivs}</div>`);
+    }
+    case "scene3d": {
+      const w = Math.round((el.width * score.meta.width) / 100);
+      const h = Math.round((el.height * score.meta.height) / 100);
+      // Canvas is driven by the inlined Three runtime via data-3d = scene--id.
+      return wrap(
+        `<canvas class="scene3d" data-3d="${esc(sceneId)}--${esc(el.id)}" width="${w}" height="${h}" style="width:${w}px;height:${h}px;display:block;"></canvas>`
+      );
     }
     case "cursor": {
       const sizePx = Math.round(28 * scale * el.scale);
@@ -605,6 +623,31 @@ export function compile(score: ScoreT, projectDir = "."): CompileResult {
     }
   }
 
+  // ADR-0010: collect scene3d specs (resolved colors + box + scene start).
+  let s3cursor = 0;
+  const scene3dSpecs: Array<Record<string, unknown>> = [];
+  for (const sc of score.scenes) {
+    for (const el of sc.elements) {
+      if (el.type === "scene3d")
+        scene3dSpecs.push({
+          key: `${sc.id}--${el.id}`,
+          primitive: el.primitive,
+          base: colorOf(p, el.baseColor),
+          env: el.envTint === "neutral" ? "#8a8a8a" : colorOf(p, el.envTint),
+          metalness: el.metalness,
+          roughness: el.roughness,
+          spinDeg: el.spinDeg,
+          tiltDeg: el.tiltDeg,
+          exposure: el.exposure,
+          w: Math.round((el.width * width) / 100),
+          h: Math.round((el.height * height) / 100),
+          sceneStartMs: s3cursor,
+        });
+    }
+    s3cursor += sc.durationMs;
+  }
+  const hasScene3d = scene3dSpecs.length > 0;
+
   const grain =
     score.style.grain > 0
       ? `<svg class="grain" width="100%" height="100%"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${score.meta.seed}" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#g)" opacity="${score.style.grain}"/></svg>`
@@ -744,6 +787,7 @@ window.__chitra = {
   setMedia: function (map) { MEDIA = map || {}; },
   seek: function (ms) {
     tl.time(Math.min(ms, DURATION_MS - 0.001) / 1000, false);
+    if (window.__three3d) window.__three3d.forEach(function (u) { u(ms); });
     var waits = [];
     VIDMETA.forEach(function (v) {
       var m = MEDIA[v.key];
@@ -761,9 +805,19 @@ window.__chitra = {
   },
   ready: function () {
     var families = ${JSON.stringify([score.style.fonts.display, score.style.fonts.text])};
-    return Promise.all(
+    var need3d = ${hasScene3d};
+    var wait3d = need3d
+      ? new Promise(function (res) {
+          var tries = 0;
+          (function poll() {
+            if (window.__three3dReady || tries++ > 200) return res();
+            setTimeout(poll, 25);
+          })();
+        })
+      : Promise.resolve();
+    return wait3d.then(function () { return Promise.all(
       families.map(function (f) { return document.fonts.load("16px '" + f + "'"); })
-    ).then(function () {
+    ); }).then(function () {
       return document.fonts.ready;
     }).then(function () {
       // Images must be decoded before any capture — a late-arriving image
@@ -777,7 +831,7 @@ window.__chitra = {
         // chitra-vid frames get src injected by the renderer post-load
         return img.getAttribute("src") && !(img.complete && img.naturalWidth > 0);
       }).map(function (img) { return img.getAttribute("src"); });
-      return { fontsOk: ok, missingTargets: MISSING, badImages: badImages };
+      return { fontsOk: ok, missingTargets: MISSING, badImages: badImages, glError: window.__three3dError || null };
     });
   },
   textRegions: function () {
@@ -799,6 +853,61 @@ window.__chitra = {
   },
 };
 </script>
+${hasScene3d ? `<script type="module">
+${threeSource()}
+(function(){
+  window.__three3d = [];
+  var SPECS3D = ${JSON.stringify(scene3dSpecs)};
+  try {
+    // Shared procedural environment per env tint (crimson/gold/neutral studio).
+    SPECS3D.forEach(function (s) {
+      var canvas = document.querySelector('canvas[data-3d="' + s.key + '"]');
+      if (!canvas) return;
+      var renderer = new WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setSize(s.w, s.h, false);
+      renderer.toneMapping = ACESFilmicToneMapping;
+      renderer.toneMappingExposure = s.exposure;
+      var scene = new Scene();
+      var cam = new PerspectiveCamera(30, s.w / s.h, 0.1, 100);
+      cam.position.set(0, 0, 7.5);
+      // PMREM environment from a vertical gradient tinted by envTint.
+      var pmrem = new PMREMGenerator(renderer);
+      var envS = new Scene();
+      var cv = document.createElement("canvas"); cv.width = 8; cv.height = 256;
+      var ctx = cv.getContext("2d");
+      var g = ctx.createLinearGradient(0, 0, 0, 256);
+      // Studio softbox: bright top highlight (so clearcoat catches a sheen),
+      // env tint mid, dark floor. A dark tint alone leaves metal near-black.
+      g.addColorStop(0, "#eef0f4"); g.addColorStop(0.28, s.env); g.addColorStop(0.62, "#1a1012"); g.addColorStop(1, "#040203");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 8, 256);
+      var envMat = new MeshBasicMaterial({ map: new CanvasTexture(cv), side: BackSide });
+      envS.add(new Mesh(new SphereGeometry(50, 32, 32), envMat));
+      scene.environment = pmrem.fromScene(envS).texture;
+      var key = new DirectionalLight(0xfff2ee, 4.2); key.position.set(5, 6, 4); scene.add(key);
+      var fill = new DirectionalLight(0xff5566, 1.6); fill.position.set(-6, -1, 3); scene.add(fill);
+      scene.add(new AmbientLight(0x553033, 0.7));
+      var geo;
+      if (s.primitive === "coin") geo = new CylinderGeometry(1.7, 1.7, 0.18, 64);
+      else if (s.primitive === "slab") geo = new BoxGeometry(2.2, 3.2, 0.14);
+      else geo = new BoxGeometry(3.4, 2.14, 0.12); // card
+      var mat = new MeshPhysicalMaterial({ color: parseInt(s.base.slice(1), 16), metalness: s.metalness, roughness: s.roughness, clearcoat: 1.0, clearcoatRoughness: 0.25, emissive: 0x0a0506, emissiveIntensity: 0.35 });
+      var mesh = new Mesh(geo, mat);
+      if (s.primitive === "coin") mesh.rotation.x = Math.PI / 2;
+      scene.add(mesh);
+      var tilt = s.tiltDeg * Math.PI / 180, spin = s.spinDeg * Math.PI / 180;
+      var baseX = mesh.rotation.x;
+      window.__three3d.push(function (ms) {
+        var local = Math.max(0, ms - s.sceneStartMs);
+        mesh.rotation.y = -0.5 + Math.sin(local / 1400) * spin;
+        mesh.rotation.x = baseX + tilt * 0.4 + Math.cos(local / 1800) * 0.04;
+        renderer.render(scene, cam);
+      });
+      window.__three3d[window.__three3d.length - 1](0);
+    });
+    window.__three3dReady = true;
+  } catch (e) { window.__three3dError = String(e && e.message || e); window.__three3dReady = true; }
+})();
+</script>` : ""}
 </body></html>`;
 
   return { html, durationMs, fps, width, height, sceneBoundsMs };

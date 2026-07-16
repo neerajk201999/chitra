@@ -51,7 +51,7 @@ const ENCODE = {
  * markup changes, GSAP upgrades). Part of every scene hash — without it the
  * cache serves frames compiled by an older compiler.
  */
-export const COMPILER_CACHE_VERSION = "8";
+export const COMPILER_CACHE_VERSION = "10";
 
 /** Content digest of a file, memoized on (path, mtime, size) — video files are
  *  tens of MB and sceneHash runs per scene per render. */
@@ -184,7 +184,14 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
   const pageFile = path.resolve(projectDir, ".chitra-page.html");
   writeFileSync(pageFile, compiled.html);
 
-  const browser = await puppeteer.launch({ headless: true, args: DETERMINISTIC_FLAGS });
+  // ADR-0010: SwiftShader WebGL flags ONLY when a 3D scene is present, so 2D
+  // renders stay byte-identical to pre-3D output. SwiftShader = software GL =
+  // deterministic (GPU output varies by hardware).
+  const has3d = score.scenes.some((s) => s.elements.some((e) => e.type === "scene3d"));
+  const flags = has3d
+    ? [...DETERMINISTIC_FLAGS, "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
+    : DETERMINISTIC_FLAGS;
+  const browser = await puppeteer.launch({ headless: true, args: flags });
   const page = await browser.newPage();
   await page.setViewport({ width: compiled.width, height: compiled.height, deviceScaleFactor: 1 });
   await page.goto(`file://${pageFile}`, { waitUntil: "load" });
@@ -194,7 +201,9 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
     fontsOk: boolean;
     missingTargets: string[];
     badImages?: string[];
+    glError?: string | null;
   };
+  if (readiness.glError) throw new Error(`3D scene failed to initialize (ADR-0010): ${readiness.glError}`);
   if (!readiness.fontsOk) throw new Error("Fonts failed to load — compiled page is not deterministic");
   if (readiness.missingTargets.length)
     throw new Error(`Choreography targets missing in DOM: ${readiness.missingTargets.join(", ")} (compiler bug or bad IR target)`);
