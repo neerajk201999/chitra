@@ -95,12 +95,14 @@ sessions inherit the taste instead of relearning it.
 
 Each principle above is a hypothesis about quality. The Chitra method: state it,
 find a deterministic or VLM-scored proxy, calibrate against labelled examples,
-then promote it to a `CC-*` gate in the Creative QA layer (M4). Examples already
-tractable: CC-NARR-4 (wordmark scene index vs total), CC-RHY-4 (time budget of the
-final beat), CC-TYPE-2 (count of distinct display treatments), CC-COMP-1 (already
-MO-CHOR-2), CC-NARR-2 (a "tension" beat must precede the "resolution" beat in the
-storyboard). What cannot yet be measured is scored by the calibrated critic and
-tracked honestly — never asserted as passing without evidence.
+then promote it to a `CC-*` gate in the Creative QA layer (M4).
+
+**Promoted to enforced gates so far:**
+- **CC-RHY-4** (rushed close) — the final scene must be ≥12% of runtime, else a P3 "the close is rushed." *First measurable promotion from this constitution (2026-07-16).*
+- **CC-COMP-1** (one hero per frame) — enforced as MO-CHOR-2.
+- **CC-NARR-4 / CC-NARR-2** (wordmark lands last; tension precedes resolution) — enforced against a Direction via the CC-CONF-\* conformance gates (ADR-0012) when a Direction is supplied.
+
+**Still prose (tractable, not yet promoted):** CC-TYPE-2 (distinct display-treatment count), CC-RHY-1/2 (silence-before-reveal, accelerate-then-rest), CC-COMP-2 (alignment). What cannot yet be measured is scored by the calibrated critic and tracked honestly — never asserted as passing without evidence. The bar for promotion is a gate + a labelled ChitraBench case, never a prose assertion.
 
 ## 9. What this constitution refuses
 

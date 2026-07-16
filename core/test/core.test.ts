@@ -412,3 +412,24 @@ describe("branded 3D face (target-film T2)", () => {
     expect(() => sceneHash((v as { score: ScoreT }).score, 0, "/nonexistent-dir")).toThrow(/asset not found/);
   });
 });
+
+describe("taste gates promoted from prose (task 5)", () => {
+  it("MO-DUR-1: a hero that snaps in faster than standard is flagged", () => {
+    const s = validFixture();
+    const heroAnim = s.scenes[0].choreography.find((a) => {
+      const el = s.scenes[0].elements.find((e) => e.id === a.target);
+      return (el as { role?: string })?.role === "hero";
+    });
+    if (heroAnim) { heroAnim.duration = undefined as never; heroAnim.override = { reason: "snap test fixture", durationMs: 100 }; }
+    expect(runStaticGates(s).some((x) => x.ruleId === "MO-DUR-1")).toBe(true);
+  });
+  it("CC-RHY-4: a starved final scene reads as a rushed close", () => {
+    const s = validFixture();
+    // shrink the last scene to <12% of runtime
+    const last = s.scenes[s.scenes.length - 1];
+    last.durationMs = 500;
+    const hits = runStaticGates(s).filter((x) => x.ruleId === "CC-RHY-4");
+    expect(hits.length).toBe(1);
+    expect(hits[0].severity).toBe("P3");
+  });
+});

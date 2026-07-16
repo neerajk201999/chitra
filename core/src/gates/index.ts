@@ -211,6 +211,19 @@ export function runStaticGates(score: ScoreT): Finding[] {
     if (overlapPeak > CHOREOGRAPHY.maxSimultaneousElements)
       f.push({ ruleId: "MO-CHOR-1", severity: "P1", path: p(".choreography"), message: `${overlapPeak} elements animate simultaneously (max ${CHOREOGRAPHY.maxSimultaneousElements})` });
 
+    // MO-DUR-1: hero entrances are deliberate (≥ standard, never snap in);
+    // support/ambient entrances don't linger (≤ dramatic). The doc claimed this
+    // enforced since M1 but no gate existed (audit doc↔code drift).
+    for (const r of resolved) {
+      if (PRESETS[r.anim.preset as PresetName].kind !== "enter") continue;
+      const el = scene.elements.find((e) => e.id === r.anim.target || (r.anim.target.endsWith("*") && e.id.startsWith(r.anim.target.slice(0, -1))));
+      const role = (el as { role?: string } | undefined)?.role;
+      if (role === "hero" && r.durationMs < DURATIONS.standard)
+        f.push({ ruleId: "MO-DUR-1", severity: "P2", path: p(`.choreography[${scene.choreography.indexOf(r.anim)}]`), message: `Hero "${r.anim.target}" enters in ${r.durationMs}ms — a hero is deliberate (≥ ${DURATIONS.standard}ms), it never snaps in` });
+      if ((role === "support" || role === "ambient") && r.durationMs > DURATIONS.dramatic)
+        f.push({ ruleId: "MO-DUR-1", severity: "P3", path: p(`.choreography[${scene.choreography.indexOf(r.anim)}]`), message: `Support element "${r.anim.target}" lingers ${r.durationMs}ms on entry (≤ ${DURATIONS.dramatic}ms keeps support out of the hero's way)` });
+    }
+
     // MO-DUR-2: exit/entrance ratio
     const enters = new Map<string, number>();
     for (const r of resolved) if (PRESETS[r.anim.preset as PresetName].kind === "enter") enters.set(r.anim.target, r.durationMs);
@@ -327,6 +340,17 @@ export function runStaticGates(score: ScoreT): Finding[] {
     const sigs = new Set(allAnims.map((a) => `${a.preset}:${a.duration ?? "d"}`));
     if (sigs.size === 1)
       f.push({ ruleId: "MO-SLOP-2", severity: "P2", path: "scenes", message: "Every animation is the same preset+duration — uniform-timing slop; vary rhythm with intent" });
+  }
+
+  // CC-RHY-4: "the last 20% is the film" — the close gets the most air. The
+  // first measurable proxy promoted from the creative constitution (§8): a
+  // final scene starved of time reads as a rushed ending. Advisory (P3) — taste,
+  // not correctness.
+  if (score.scenes.length >= 3) {
+    const total = totalDurationMs(score);
+    const closeMs = score.scenes[score.scenes.length - 1].durationMs;
+    if (total > 0 && closeMs / total < 0.12)
+      f.push({ ruleId: "CC-RHY-4", severity: "P3", path: `scenes[${score.scenes.length - 1}].durationMs`, message: `The close is ${Math.round((closeMs / total) * 100)}% of the film (${closeMs}ms) — the ending is where the feeling lands; give it air (≥12%)` });
   }
 
   return f;
