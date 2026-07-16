@@ -63,7 +63,10 @@ export const CHOREOGRAPHY = {
 // ── Typography (MO-TYPE) ───────────────────────────────────────────────────
 export const TYPOGRAPHY = {
   minTextPx1080: { "brand-film": 24, "product-demo": 24, "social-short": 48 },
-  minContrast: 4.5, // WCAG AA, held per frame (MO-TYPE-2)
+  minFigureTextPx1080: 12, // MO-FIG-1 advisory floor — diegetic UI text in mockups
+  hardFigureTextPx1080: 8, // MO-FIG-1 hard floor — illegible after video encoding
+  minContrast: 4.5, // WCAG AA body copy, held per frame (MO-TYPE-2)
+  minUiContrast: 3.0, // WCAG AA large-text / UI-component tier (buttons, figure labels, display)
   readingWpm: 200, // MO-EDIT-1
   readingSafety: 1.4, // MO-EDIT-1
   sceneEntryGraceMs: 300, // MO-EDIT-1

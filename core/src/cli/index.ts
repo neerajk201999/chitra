@@ -16,7 +16,7 @@ import { fetchAsset, snapPage, writeAssetLog } from "../assets/index.js";
 import { analyzeAudio } from "../audio/analyze.js";
 
 const program = new Command();
-program.name("chitra").description("Chitra deterministic core: validate, gate, render, and generate critic evidence for Motion IR scores").version("0.1.0");
+program.name("chitra").description("Chitra deterministic core: validate, gate, render, and generate critic evidence for Motion IR scores").version("0.2.0");
 
 function loadScore(file: string): { score: ScoreT; projectDir: string } {
   const abs = path.resolve(file);

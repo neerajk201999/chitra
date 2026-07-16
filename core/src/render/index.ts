@@ -51,7 +51,7 @@ const ENCODE = {
  * markup changes, GSAP upgrades). Part of every scene hash — without it the
  * cache serves frames compiled by an older compiler.
  */
-export const COMPILER_CACHE_VERSION = "11";
+export const COMPILER_CACHE_VERSION = "12";
 
 /** Content digest of a file, memoized on (path, mtime, size) — video files are
  *  tens of MB and sceneHash runs per scene per render. */
@@ -128,6 +128,9 @@ export interface TextRegion {
   y: number;
   w: number;
   h: number;
+  /** True for text discovered INSIDE figure fragments (audit A1) — gated with
+   *  diegetic-UI severities (MO-FIG-1 floors, P2 safe-zone). */
+  figure?: boolean;
 }
 
 /** ADR-0007: pre-extract every video element to per-frame JPEGs (content-hashed,

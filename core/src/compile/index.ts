@@ -850,7 +850,7 @@ window.__chitra = {
   },
   textRegions: function () {
     var stage = document.getElementById("stage").getBoundingClientRect();
-    return TEXTMETA.map(function (m) {
+    var out = TEXTMETA.map(function (m) {
       var el = document.querySelector(m.sel);
       if (!el) return null;
       var st = getComputedStyle(el);
@@ -864,6 +864,63 @@ window.__chitra = {
       return { sel: m.sel, scene: m.sceneId, visible: vis, overMedia: m.overMedia, color: m.color,
         fontSizePx: fs, x: r.left - stage.left, y: r.top - stage.top, w: r.width, h: r.height };
     }).filter(Boolean);
+
+    // Audit A1: figure-internal text discovery. Every leaf-ish element with its
+    // own text inside a .figure is registered so typography gates see it.
+    // Pure DOM reads — deterministic. overMedia:true always (figure backgrounds
+    // are arbitrary fragment CSS; contrast must be pixel-sampled).
+    var figures = document.querySelectorAll(".figure");
+    for (var fi = 0; fi < figures.length; fi++) {
+      var fig = figures[fi];
+      var elWrap = fig.closest(".el");
+      var sceneEl = fig.closest(".scene");
+      if (!elWrap || !sceneEl) continue;
+      var sceneId = sceneEl.id.slice(6);
+      var sceneHidden = getComputedStyle(sceneEl).visibility === "hidden";
+      var figRect = fig.getBoundingClientRect();
+      // computed fontSize ignores transforms (scale-settle etc.); recover the
+      // effective scale from rendered vs layout width
+      var fxScale = fig.offsetWidth ? figRect.width / fig.offsetWidth : 1;
+      var nodes = fig.querySelectorAll("*");
+      var emitted = 0;
+      for (var ni = 0; ni < nodes.length && emitted < 40; ni++) {
+        var n = nodes[ni];
+        var hasOwnText = false;
+        for (var c = n.firstChild; c; c = c.nextSibling)
+          if (c.nodeType === 3 && c.nodeValue.trim()) { hasOwnText = true; break; }
+        if (!hasOwnText) continue;
+        var nst = getComputedStyle(n);
+        if (nst.display === "none") continue;
+        var nvis = nst.visibility !== "hidden" && !sceneHidden;
+        var op = 1, w = n;
+        while (w && w !== sceneEl) { op *= parseFloat(getComputedStyle(w).opacity || "1"); w = w.parentElement; }
+        if (op <= 0.05) nvis = false;
+        // union rect of DIRECT text nodes only (excludes child-element boxes)
+        var rng = document.createRange(), rect = null;
+        for (var c2 = n.firstChild; c2; c2 = c2.nextSibling) {
+          if (c2.nodeType !== 3 || !c2.nodeValue.trim()) continue;
+          rng.selectNodeContents(c2);
+          var rr = rng.getBoundingClientRect();
+          rect = rect
+            ? { left: Math.min(rect.left, rr.left), top: Math.min(rect.top, rr.top), right: Math.max(rect.right, rr.right), bottom: Math.max(rect.bottom, rr.bottom) }
+            : { left: rr.left, top: rr.top, right: rr.right, bottom: rr.bottom };
+        }
+        if (!rect || rect.right - rect.left < 2 || rect.bottom - rect.top < 4) continue;
+        var cm = nst.color.match(/\\d+(\\.\\d+)?/g) || ["255", "255", "255"];
+        if (cm.length >= 4 && parseFloat(cm[3]) <= 0.05) nvis = false;
+        var hex = "#" + [0, 1, 2].map(function (i) { return ("0" + Math.round(parseFloat(cm[i])).toString(16)).slice(-2); }).join("");
+        out.push({
+          sel: "#" + elWrap.id + " " + n.tagName.toLowerCase() + (n.id ? "#" + n.id : "") + "[" + ni + "]",
+          scene: sceneId, visible: nvis, overMedia: true, color: hex,
+          fontSizePx: parseFloat(nst.fontSize) * fxScale,
+          x: rect.left - stage.left, y: rect.top - stage.top,
+          w: rect.right - rect.left, h: rect.bottom - rect.top,
+          figure: true,
+        });
+        emitted++;
+      }
+    }
+    return out;
   },
 };
 </script>

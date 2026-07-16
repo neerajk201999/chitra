@@ -1,7 +1,12 @@
 {
   "name": "chitra",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Direct cinematic motion-design videos from your coding agent: two-tier Motion IR, deterministic rendering, quality gates that watch the render, and a bounded critique loop.",
-  "author": { "name": "Chitra" },
-  "skills": ["./skills/create-video", "./skills/critique-video"]
+  "author": {
+    "name": "Chitra"
+  },
+  "skills": [
+    "./skills/create-video",
+    "./skills/critique-video"
+  ]
 }

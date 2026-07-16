@@ -398,57 +398,145 @@ export async function runFrameGates(score: ScoreT, session: RenderSession): Prom
   const W = score.meta.width, H = score.meta.height;
   const safe = { x0: W * zone.left, y0: H * zone.top, x1: W * (1 - zone.right), y1: H * (1 - zone.bottom) };
 
-  // Sample each scene at entry-settled point, midpoint, and pre-exit point.
+  // Animation-boundary sampling (audit A2): each scene is sampled at entry/mid/
+  // pre-exit PLUS every animation's end (+50ms, settled) and midpoint (mid-
+  // flight), deduped within 80ms, capped at 8 samples/scene. Overlap runs at
+  // settled samples only (choreographed mid-flight crossings are legitimate);
+  // pixel contrast at two captures (midpoint + last settled); blank at midpoint.
+  const beats = score.audio?.music?.beats;
+  const scaleMin = Math.min(W, H) / 1080;
   for (let si = 0; si < score.scenes.length; si++) {
     const b = session.compiled.sceneBoundsMs[si];
-    const times = [b.startMs + Math.min(700, (b.endMs - b.startMs) * 0.35), (b.startMs + b.endMs) / 2, b.endMs - Math.min(250, (b.endMs - b.startMs) * 0.15)];
-    for (const t of times) {
+    const dur = b.endMs - b.startMs;
+    const resolved = safeResolve(score.scenes[si], { sceneStartMs: b.startMs, beats }) ?? [];
+
+    type Sample = { t: number; settled: boolean; pri: number };
+    const cand: Sample[] = [
+      { t: b.startMs + Math.min(700, dur * 0.35), settled: true, pri: 0 },
+      { t: (b.startMs + b.endMs) / 2, settled: true, pri: 0 },
+      { t: b.endMs - Math.min(250, dur * 0.15), settled: true, pri: 0 },
+    ];
+    for (const r of resolved) {
+      if (PRESETS[r.anim.preset as PresetName].kind === "ambient") continue;
+      const staggerTail = r.anim.stagger ? r.anim.stagger.eachMs * Math.max(0, targetCount(score.scenes[si], r.anim.target) - 1) : 0;
+      cand.push({ t: b.startMs + r.startMs + r.durationMs + staggerTail + 50, settled: true, pri: 1 });
+      cand.push({ t: b.startMs + r.startMs + r.durationMs / 2, settled: false, pri: 2 });
+    }
+    // Truthful "settled": no non-ambient animation is in-flight at this instant.
+    // A base sample's settled:true is a heuristic that lies when an entrance
+    // ends after the scene midpoint (e.g. a button still fading in at midT) —
+    // recompute it so overlap/contrast only judge fully-composed frames.
+    const inFlight = (tLocal: number) =>
+      resolved.some((r) => {
+        if (PRESETS[r.anim.preset as PresetName].kind === "ambient") return false;
+        const tail = r.anim.stagger ? r.anim.stagger.eachMs * Math.max(0, targetCount(score.scenes[si], r.anim.target) - 1) : 0;
+        return tLocal > r.startMs - 1 && tLocal < r.startMs + r.durationMs + tail + 40;
+      });
+    for (const s of cand) s.settled = s.settled && !inFlight(s.t - b.startMs);
+    const inRange = cand.filter((s) => s.t > b.startMs && s.t < b.endMs - 1).sort((a, z) => a.t - z.t || a.pri - z.pri);
+    const dedup: Sample[] = [];
+    for (const s of inRange) {
+      const last = dedup[dedup.length - 1];
+      if (last && s.t - last.t <= 80) {
+        if (s.pri < last.pri) dedup[dedup.length - 1] = s;
+        continue;
+      }
+      dedup.push(s);
+    }
+    const samples = dedup.length <= 8 ? dedup : [...dedup].sort((a, z) => a.pri - z.pri).slice(0, 8).sort((a, z) => a.t - z.t);
+    const midT = (b.startMs + b.endMs) / 2;
+    const firstSettledT = samples.find((s) => s.settled)?.t ?? midT;
+    const lastSettledT = [...samples].reverse().find((s) => s.settled)?.t ?? midT;
+
+    let midShot: Buffer | null = null;
+    for (const s of samples) {
+      const t = s.t;
       const regions = (await session.textRegions(t)).filter((r) => r.visible && r.scene === score.scenes[si].id);
-      const shot = t === times[1] ? await session.seekAndCapture(t) : null;
+      // Contrast only at settled captures — text mid-fade is legitimately low
+      // contrast; judging it there manufactures false positives. Always take a
+      // midpoint shot for blank-frame detection though.
+      const wantContrast = s.settled && (t === firstSettledT || t === lastSettledT);
+      const shot = wantContrast || t === midT ? await session.seekAndCapture(t) : null;
+      if (t === midT && shot) midShot = shot;
 
       for (const r of regions) {
-        // MO-TYPE-4: safe zones
+        // MO-TYPE-4: safe zones — figure-internal text is diegetic UI that is
+        // routinely cropped by design (bled device mockups), so P2 not P1.
         if (r.x < safe.x0 - 1 || r.y < safe.y0 - 1 || r.x + r.w > safe.x1 + 1 || r.y + r.h > safe.y1 + 1)
-          f.push({ ruleId: "MO-TYPE-4", severity: "P1", path: r.sel, timecodeMs: Math.round(t), message: `Text outside ${score.meta.safeZone} safe zone at ${(t / 1000).toFixed(2)}s` });
+          f.push({ ruleId: "MO-TYPE-4", severity: r.figure ? "P2" : "P1", path: r.sel, timecodeMs: Math.round(t), message: `Text outside ${score.meta.safeZone} safe zone at ${(t / 1000).toFixed(2)}s` });
 
-        // MO-TYPE-2: contrast — pixel-sampled when over media, palette-computed otherwise
-        if (r.overMedia && shot) {
-          const region = await sharp(shot)
+        // MO-FIG-1 (audit A1): figure-internal text size floor. Two-tier:
+        // <12px@1080 is a P2 (diegetic UI labels are legitimately small),
+        // <8px@1080 is physically illegible after encoding — P1.
+        if (r.figure && r.fontSizePx < TYPOGRAPHY.minFigureTextPx1080 * scaleMin)
+          f.push({ ruleId: "MO-FIG-1", severity: r.fontSizePx < TYPOGRAPHY.hardFigureTextPx1080 * scaleMin ? "P1" : "P2", path: r.sel, timecodeMs: Math.round(t), message: `Figure text renders at ${Math.round(r.fontSizePx)}px (advisory floor ${Math.round(TYPOGRAPHY.minFigureTextPx1080 * scaleMin)}px, hard floor ${Math.round(TYPOGRAPHY.hardFigureTextPx1080 * scaleMin)}px)` });
+
+        // MO-TYPE-2: contrast — pixel-sampled when over media (incl. all figure text)
+        if (r.overMedia && shot && wantContrast) {
+          // sharp's .stats() ignores the pipeline and reads the INPUT image —
+          // .extract().stats() silently measured the whole frame (bug present
+          // since M1, exposed by the A1 adversarial fixture). Materialize the
+          // crop first, then stat it.
+          const crop = await sharp(shot)
             .extract({
               left: Math.max(0, Math.round(r.x)),
               top: Math.max(0, Math.round(r.y)),
               width: Math.min(W - Math.round(Math.max(0, r.x)), Math.max(1, Math.round(r.w))),
               height: Math.min(H - Math.round(Math.max(0, r.y)), Math.max(1, Math.round(r.h))),
             })
-            .stats();
+            .toBuffer();
+          const region = await sharp(crop).stats();
           const bgLum = luminance(region.channels[0].mean, region.channels[1].mean, region.channels[2].mean);
           const ratio = contrast(hexLum(r.color), bgLum);
-          if (ratio < TYPOGRAPHY.minContrast)
-            f.push({ ruleId: "MO-TYPE-2", severity: "P1", path: r.sel, timecodeMs: Math.round(t), message: `Text contrast ${ratio.toFixed(1)}:1 over media at ${(t / 1000).toFixed(2)}s (min ${TYPOGRAPHY.minContrast}:1)` });
+          // WCAG: 4.5:1 for editorial body copy; 3:1 for large text and UI
+          // components. Figure text is diegetic UI (buttons, labels), and large
+          // display/headline text also qualifies for the 3:1 tier.
+          const min = r.figure || r.fontSizePx >= 30 * scaleMin ? TYPOGRAPHY.minUiContrast : TYPOGRAPHY.minContrast;
+          if (ratio < min)
+            f.push({ ruleId: "MO-TYPE-2", severity: "P1", path: r.sel, timecodeMs: Math.round(t), message: `Text contrast ${ratio.toFixed(1)}:1 over media at ${(t / 1000).toFixed(2)}s (min ${min}:1)` });
+        }
+      }
+
+      // QE-OVERLAP-1 at settled samples only. Figure-vs-figure pairs are skipped
+      // (overlapping text inside one mockup is normal UI layout); editorial copy
+      // colliding with figure text is exactly the A1 hole — kept P1.
+      if (s.settled) {
+        for (let a = 0; a < regions.length; a++) {
+          for (let bIdx = a + 1; bIdx < regions.length; bIdx++) {
+            const A = regions[a], B = regions[bIdx];
+            if (A.figure && B.figure) continue;
+            const ox = Math.min(A.x + A.w, B.x + B.w) - Math.max(A.x, B.x);
+            const oy = Math.min(A.y + A.h, B.y + B.h) - Math.max(A.y, B.y);
+            if (ox > 2 && oy > 2)
+              f.push({ ruleId: "QE-OVERLAP-1", severity: "P1", path: `${A.sel} ∩ ${B.sel}`, timecodeMs: Math.round(t), message: `Text elements overlap by ${Math.round(ox)}×${Math.round(oy)}px at ${(t / 1000).toFixed(2)}s` });
+          }
         }
       }
     }
 
-    // QE-OVERLAP-1: visible text regions must not intersect (settled sample)
-    const settled = await session.textRegions(times[1]);
-    const vis = settled.filter((r) => r.visible && r.scene === score.scenes[si].id);
-    for (let a = 0; a < vis.length; a++) {
-      for (let bIdx = a + 1; bIdx < vis.length; bIdx++) {
-        const A = vis[a], B = vis[bIdx];
-        const ox = Math.min(A.x + A.w, B.x + B.w) - Math.max(A.x, B.x);
-        const oy = Math.min(A.y + A.h, B.y + B.h) - Math.max(A.y, B.y);
-        if (ox > 2 && oy > 2)
-          f.push({ ruleId: "QE-OVERLAP-1", severity: "P1", path: `${A.sel} ∩ ${B.sel}`, timecodeMs: Math.round(times[1]), message: `Text elements overlap by ${Math.round(ox)}×${Math.round(oy)}px at ${(times[1] / 1000).toFixed(2)}s` });
-      }
-    }
-
-    // Blank-frame detection at scene midpoint
-    const mid = await session.seekAndCapture((b.startMs + b.endMs) / 2);
+    // Blank-frame detection reuses the midpoint capture (or takes one if the
+    // midpoint sample was thinned out by the cap).
+    const mid = midShot ?? (await session.seekAndCapture(midT));
     const stats = await sharp(mid).stats();
     const sd = stats.channels.reduce((s, c) => s + c.stdev, 0) / stats.channels.length;
     if (sd < 1.0)
-      f.push({ ruleId: "QE-BLANK-1", severity: "P1", path: `scenes[${si}]`, timecodeMs: Math.round((b.startMs + b.endMs) / 2), message: `Scene midpoint is a near-uniform frame (stdev ${sd.toFixed(2)}) — likely blank render or dead scene` });
+      f.push({ ruleId: "QE-BLANK-1", severity: "P1", path: `scenes[${si}]`, timecodeMs: Math.round(midT), message: `Scene midpoint is a near-uniform frame (stdev ${sd.toFixed(2)}) — likely blank render or dead scene` });
   }
+
+  // Multi-sample dedupe: the same static violation would otherwise re-report at
+  // every sample. Keep the earliest occurrence per (ruleId, path).
+  const seen = new Set<string>();
+  const deduped = f
+    .slice()
+    .sort((a, z) => (a.timecodeMs ?? 0) - (z.timecodeMs ?? 0))
+    .filter((x) => {
+      const k = `${x.ruleId}|${x.path}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  f.length = 0;
+  f.push(...deduped);
 
   // Static contrast for non-media text (cheap, exact, whole score)
   const p = score.style.palette;

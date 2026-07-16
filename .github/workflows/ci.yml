@@ -33,6 +33,16 @@ jobs:
         run: |
           node core/dist/cli/index.js validate examples/launch-film/score.json
           node core/dist/cli/index.js validate examples/social-short/score.json
-      - name: Package is publishable
+      - name: Packed artifact installs, imports, and runs
         working-directory: core
-        run: npm pack --dry-run
+        run: |
+          npm pack --silent
+          TARBALL="$PWD/$(ls chitra-video-*.tgz | tail -1)"
+          SMOKE="$(mktemp -d)"
+          cd "$SMOKE"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund "$TARBALL" >/dev/null
+          node -e "import('chitra-video').then(m => { if (!m.validateScore) throw new Error('validateScore missing from exports'); console.log('import OK'); })"
+          ./node_modules/.bin/chitra --version
+          ./node_modules/.bin/chitra init smoke-film --style night --title "CI Smoke"
+          ./node_modules/.bin/chitra validate smoke-film/score.json
