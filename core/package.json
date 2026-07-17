@@ -1,5 +1,5 @@
 {
-  "name": "chitra-video",
+  "name": "@neeraj201999/chitra",
   "version": "0.2.0",
   "description": "Deterministic core for Chitra, the AI-native OS for cinematic video: Motion IR validation, quality gates, deterministic rendering, critic evidence",
   "main": "dist/index.js",
@@ -56,7 +56,8 @@
     "node": ">=22.12"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "files": [
     "dist",

@@ -30,7 +30,7 @@ chitra init . --style night --title "My film"   # a gate-passing starter score
 chitra render score.json -o out.mp4 -q draft    # your first video, in seconds
 ```
 
-Once published to npm it's simply `npm install -g chitra-video` — check [the package page](https://www.npmjs.com/package/chitra-video).
+Once published to npm it's simply `npm install -g @neeraj201999/chitra` — check [the package page](https://www.npmjs.com/package/@neeraj201999/chitra).
 
 ## The loop
 

@@ -37,12 +37,12 @@ jobs:
         working-directory: core
         run: |
           npm pack --silent
-          TARBALL="$PWD/$(ls chitra-video-*.tgz | tail -1)"
+          TARBALL="$PWD/$(ls neeraj201999-chitra-*.tgz | tail -1)"
           SMOKE="$(mktemp -d)"
           cd "$SMOKE"
           npm init -y >/dev/null
           npm install --no-audit --no-fund "$TARBALL" >/dev/null
-          node -e "import('chitra-video').then(m => { if (!m.validateScore) throw new Error('validateScore missing from exports'); console.log('import OK'); })"
+          node -e "import('@neeraj201999/chitra').then(m => { if (!m.validateScore) throw new Error('validateScore missing from exports'); console.log('import OK'); })"
           ./node_modules/.bin/chitra --version
           ./node_modules/.bin/chitra init smoke-film --style night --title "CI Smoke"
           ./node_modules/.bin/chitra validate smoke-film/score.json
