@@ -22,7 +22,7 @@ Requirements: **Node 22.12+** and **ffmpeg** on your PATH.
 git clone https://github.com/neerajk201999/chitra && cd chitra && ./scripts/setup.sh
 ```
 
-`setup.sh` checks your toolchain, builds, links the `chitra` command, and runs a probe. Then:
+`setup.sh` checks your toolchain, builds, links the `chitra` command, and runs a probe (which downloads Chrome for Testing once, ~150MB — installs themselves are 7 seconds / ~107MB). Then:
 
 ```bash
 mkdir my-film && cd my-film
@@ -47,6 +47,8 @@ chitra render score.json -o out.mp4 -q high     # full frame-gated; refuses P1 f
 chitra evidence score.json -o evidence/         # contact sheet + hero frames + cut strips
 ```
 
+Housekeeping: frame caches make re-renders instant; `chitra clean` clears one project, `chitra clean --global` reclaims every cache on the machine (they rebuild on demand).
+
 Beyond the basics: `chitra fetch`/`snap` (pull real images/screenshots), `chitra analyze-audio` + `at.onBeat` (motion scored to a track), `chitra bed`/`sfx-kit` (license-free audio), plus `image`/`video`/`figure`/`particles`/`scene3d` elements — real 3D, dot-matrix motifs, and sandboxed UI mockups. See [AGENTS.md](AGENTS.md).
 
 ## Why it's different
@@ -60,7 +62,7 @@ Every other tool solves *rendering*. Chitra also solves **taste and trust**:
 
 ## Status — honest
 
-**v0.2.0.** The closed loop works and is measured: deterministic render → gates (**10/10** on the [seeded-defect benchmark](benchmarks/seeded-defects/results.md)) → evidence → critique → revision. Capabilities shipped: images, video-in-scene, sandboxed UI figures, cursor/type choreography, particle fields, real 3D, beat-scored audio.
+**v0.2.1.** The closed loop works and is measured: deterministic render → gates (**10/10** on the [seeded-defect benchmark](benchmarks/seeded-defects/results.md)) → evidence → critique → revision. Capabilities shipped: images, video-in-scene, sandboxed UI figures, cursor/type choreography, particle fields, real 3D, beat-scored audio.
 
 **Not yet:** the aesthetic critic is not independently validated (small labelled set); no cross-machine golden-frame CI; no live preview UI; no distributed rendering. We publish what's proven and what isn't in the [roadmap](docs/roadmap/roadmap.md) and [known issues](docs/roadmap/known-issues.md). If a claim isn't measured, it says so.
 

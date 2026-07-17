@@ -13,7 +13,30 @@ import { createHash } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
-import puppeteer, { type Browser, type Page } from "puppeteer";
+import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import { chitraCacheDir, ensureChrome } from "./chrome.js";
+
+/** Frame caches killed this user's disk TWICE: per-project pruning only runs
+ *  when a project is re-rendered, so dormant projects hoard stale caches
+ *  forever. Every session registers its cache dir in a global ledger so
+ *  `chitra clean --global` can find and reclaim all of them. */
+export function registerProjectCache(cacheDir: string): void {
+  try {
+    const ledger = path.join(chitraCacheDir(), "project-caches.txt");
+    mkdirSync(path.dirname(ledger), { recursive: true });
+    const abs = path.resolve(cacheDir);
+    const existing = existsSync(ledger) ? readFileSync(ledger, "utf8").split("\n").filter(Boolean) : [];
+    if (!existing.includes(abs)) writeFileSync(ledger, [...existing, abs].join("\n") + "\n");
+  } catch {
+    /* ledger is best-effort — never block a render on it */
+  }
+}
+
+export function knownProjectCaches(): string[] {
+  const ledger = path.join(chitraCacheDir(), "project-caches.txt");
+  if (!existsSync(ledger)) return [];
+  return readFileSync(ledger, "utf8").split("\n").filter((p) => p && existsSync(p));
+}
 import type { ScoreT } from "../ir/schema.js";
 import { compile, resolveSceneTimeline, type CompileResult } from "../compile/index.js";
 
@@ -73,7 +96,7 @@ const ENCODE = {
  * markup changes, GSAP upgrades). Part of every scene hash — without it the
  * cache serves frames compiled by an older compiler.
  */
-export const COMPILER_CACHE_VERSION = "12";
+export const COMPILER_CACHE_VERSION = "13";
 
 /** Content digest of a file, memoized on (path, mtime, size) — video files are
  *  tens of MB and sceneHash runs per scene per render. */
@@ -205,6 +228,7 @@ export function prepareMedia(
 export async function openSession(score: ScoreT, projectDir: string, workDir: string): Promise<RenderSession> {
   const compiled = compile(score, projectDir);
   mkdirSync(workDir, { recursive: true });
+  registerProjectCache(workDir);
   // Page lives in the project dir so relative asset paths (images) resolve.
   // Absolute path required: file:// URLs cannot be relative.
   const pageFile = path.resolve(projectDir, ".chitra-page.html");
@@ -218,7 +242,10 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
     ? [...DETERMINISTIC_FLAGS, "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
     : DETERMINISTIC_FLAGS;
   installSignalHandlers();
-  const browser = await puppeteer.launch({ headless: true, args: flags });
+  const executablePath = await ensureChrome((pct) =>
+    console.error(pct === 0 ? "  downloading Chrome for Testing (one-time, ~150MB)…" : `  chrome download ${pct}%`)
+  );
+  const browser = await puppeteer.launch({ headless: true, executablePath, args: flags });
   openBrowsers.add(browser);
   const page = await browser.newPage();
   await page.setViewport({ width: compiled.width, height: compiled.height, deviceScaleFactor: 1 });
@@ -252,7 +279,10 @@ export async function openSession(score: ScoreT, projectDir: string, workDir: st
     },
     async seekAndCapture(ms: number) {
       await page.evaluate(`window.__chitra.seek(${ms})`);
-      return Buffer.from(await stage.screenshot({ type: "png" }));
+      // optimizeForSpeed: CDP's fast PNG encoder — measurably quicker captures,
+      // still lossless PNG (determinism note: changes the byte-encoding of
+      // frames, not the pixels; cache v13 accounts for it).
+      return Buffer.from(await stage.screenshot({ type: "png", optimizeForSpeed: true }));
     },
     async textRegions(ms: number) {
       await page.evaluate(`window.__chitra.seek(${ms})`);

@@ -10,13 +10,14 @@ import { spawnSync } from "node:child_process";
 import { Command } from "commander";
 import { validateScore, validateDirection, type ScoreT, type DirectionT } from "../ir/schema.js";
 import { runStaticGates, runFrameGates, runConformance, summarize, type Finding } from "../gates/index.js";
-import { openSession, renderScore, type Quality } from "../render/index.js";
+import { openSession, renderScore, knownProjectCaches, type Quality } from "../render/index.js";
 import { generateEvidence } from "../evidence/index.js";
 import { fetchAsset, snapPage, writeAssetLog } from "../assets/index.js";
 import { analyzeAudio } from "../audio/analyze.js";
+import { chromeReady, ensureChrome, CHROME_BUILD } from "../render/chrome.js";
 
 const program = new Command();
-program.name("chitra").description("Chitra deterministic core: validate, gate, render, and generate critic evidence for Motion IR scores").version("0.2.0");
+program.name("chitra").description("Chitra deterministic core: validate, gate, render, and generate critic evidence for Motion IR scores").version("0.2.1");
 
 function loadScore(file: string): { score: ScoreT; projectDir: string } {
   const abs = path.resolve(file);
@@ -253,8 +254,24 @@ program
 program
   .command("clean")
   .argument("[dir]", "project directory", ".")
-  .description("Remove Chitra work artifacts (.chitra-cache/, .chitra-page.html) from a project directory")
-  .action((dir: string) => {
+  .option("--global", "reclaim frame caches from EVERY project this machine has ever rendered (ledger-based)")
+  .description("Remove Chitra work artifacts (.chitra-cache/, .chitra-page.html). --global sweeps all known project caches — frame caches regenerate on demand, so this is always safe.")
+  .action((dir: string, o: { global?: boolean }) => {
+    if (o.global) {
+      let freed = 0;
+      for (const cache of knownProjectCaches()) {
+        try {
+          const size = spawnSync("du", ["-sk", cache], { encoding: "utf8" }).stdout?.split("\t")[0];
+          rmSync(cache, { recursive: true, force: true });
+          freed += parseInt(size ?? "0", 10);
+          console.log(`✔ removed ${cache}`);
+        } catch {
+          console.log(`○ could not remove ${cache}`);
+        }
+      }
+      console.log(freed > 0 ? `✔ reclaimed ~${(freed / 1024 / 1024).toFixed(1)}GB — caches rebuild on next render` : "nothing to reclaim");
+      return;
+    }
     for (const f of [".chitra-cache", ".chitra-page.html"]) {
       const t = path.resolve(dir, f);
       if (existsSync(t)) {
@@ -466,15 +483,25 @@ program
 
 program
   .command("probe")
-  .description("Verify the environment: ffmpeg, bundled Chrome, fonts")
-  .action(() => {
+  .option("--no-download", "report Chrome status without downloading it")
+  .description("Verify the environment: ffmpeg + Chrome (downloads Chrome once, ~150MB, if missing)")
+  .action(async (o: { download: boolean }) => {
     const ff = spawnSync("ffmpeg", ["-version"], { encoding: "utf8" });
     console.log(ff.status === 0 ? `✔ ffmpeg: ${ff.stdout.split("\n")[0]}` : "✖ ffmpeg not found on PATH — install ffmpeg");
-    try {
-      // Puppeteer resolves its vendored browser lazily; a launch is the real probe.
-      console.log("✔ puppeteer installed (browser downloads on first render if needed)");
-    } catch {
-      console.log("✖ puppeteer missing");
+    const ready = chromeReady();
+    if (ready) {
+      console.log(`✔ chrome ${CHROME_BUILD}: ${ready}`);
+    } else if (o.download) {
+      console.log(`  chrome ${CHROME_BUILD} not present — downloading once (~150MB)…`);
+      try {
+        const p = await ensureChrome((pct) => process.stdout.write(`\r  chrome download ${pct}%   `));
+        console.log(`\n✔ chrome ${CHROME_BUILD}: ${p}`);
+      } catch (e) {
+        console.log(`\n✖ chrome download failed: ${(e as Error).message}`);
+        process.exit(1);
+      }
+    } else {
+      console.log(`○ chrome ${CHROME_BUILD} not present — will download on first render (or run \`chitra probe\`)`);
     }
     process.exit(ff.status === 0 ? 0 : 1);
   });

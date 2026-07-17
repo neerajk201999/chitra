@@ -7,8 +7,9 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import sharp from "sharp";
+import { ensureChrome } from "../render/chrome.js";
 
 export interface AssetReport {
   out: string;
@@ -70,7 +71,10 @@ export async function snapPage(
   assertHttpUrl(url);
   const width = opts.width ?? 1920;
   const height = opts.height ?? 1080;
-  const browser = await puppeteer.launch({ headless: true });
+  const executablePath = await ensureChrome((pct) =>
+    console.error(pct === 0 ? "  downloading Chrome for Testing (one-time, ~150MB)…" : `  chrome download ${pct}%`)
+  );
+  const browser = await puppeteer.launch({ headless: true, executablePath });
   try {
     const page = await browser.newPage();
     await page.setViewport({ width, height, deviceScaleFactor: 2 });

@@ -7,10 +7,9 @@ on:
 jobs:
   core:
     runs-on: ubuntu-latest
-    env:
-      # Unit tests, gates, and validation are browser-free; skip the ~170MB
-      # Chrome download. Browser-dependent golden-frame CI is a tracked M5 item.
-      PUPPETEER_SKIP_DOWNLOAD: "1"
+    # No browser downloads at install (puppeteer-core is download-free; Chrome
+    # is provisioned lazily at first render). Browser-dependent golden-frame CI
+    # is a tracked M5 item.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
