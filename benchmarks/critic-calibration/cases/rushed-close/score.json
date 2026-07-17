@@ -1,0 +1,646 @@
+{
+  "irVersion": "0.1.0",
+  "tier": "score",
+  "meta": {
+    "title": "Chitra — Taste is the product",
+    "register": "brand-film",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "seed": 7,
+    "safeZone": "16x9-standard"
+  },
+  "style": {
+    "name": "chitra-night",
+    "palette": {
+      "bg": "#0a0a0e",
+      "surface": "#1b1b24",
+      "primary": "#6e7bf2",
+      "accent": "#8ee8c8",
+      "text": "#f2f2f6",
+      "textDim": "#a2a2ae",
+      "onMedia": "#ffffff"
+    },
+    "fonts": {
+      "display": "Space Grotesk",
+      "text": "Inter",
+      "mono": "JetBrains Mono"
+    },
+    "displayWeight": 500,
+    "textWeight": 400,
+    "trackingDisplay": -0.02,
+    "grain": 0.05
+  },
+  "scenes": [
+    {
+      "id": "cold-open",
+      "reason": "State the brand and thesis in one breath before explaining anything",
+      "durationMs": 3600,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "glow",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.32,
+          "position": {
+            "anchor": "center",
+            "x": 32,
+            "y": 30
+          },
+          "width": 90,
+          "height": 90
+        },
+        {
+          "type": "text",
+          "id": "kicker",
+          "role": "support",
+          "textRole": "kicker",
+          "content": "CHITRA",
+          "color": "accent",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 33
+          }
+        },
+        {
+          "type": "text",
+          "id": "thesis",
+          "role": "hero",
+          "textRole": "display",
+          "content": "Taste is the product.",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 51
+          },
+          "maxWidth": 72
+        }
+      ],
+      "choreography": [
+        {
+          "id": "glow-drift",
+          "target": "glow",
+          "preset": "drift",
+          "direction": "right",
+          "distance": 6,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 3600
+          }
+        },
+        {
+          "id": "kicker-in",
+          "target": "kicker",
+          "preset": "fade-up",
+          "duration": "standard",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 250
+          }
+        },
+        {
+          "id": "thesis-in",
+          "target": "thesis",
+          "preset": "blur-focus",
+          "duration": "dramatic",
+          "at": {
+            "after": "kicker-in",
+            "offsetMs": 120
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "fade",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "problem",
+      "reason": "Name the gap every existing tool leaves open — sets up why Chitra exists",
+      "durationMs": 4400,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "text",
+          "id": "line-a",
+          "role": "hero",
+          "textRole": "headline",
+          "content": "Every tool renders.",
+          "align": "left",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 44
+          },
+          "maxWidth": 60
+        },
+        {
+          "type": "text",
+          "id": "line-b",
+          "role": "support",
+          "textRole": "headline",
+          "content": "Almost none direct.",
+          "color": "text-dim",
+          "align": "left",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 56
+          },
+          "maxWidth": 60
+        },
+        {
+          "type": "shape",
+          "id": "rule",
+          "role": "ambient",
+          "shape": "line",
+          "color": "accent",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 50
+          },
+          "width": 14
+        },
+        {
+          "type": "shape",
+          "id": "glow-p",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.12,
+          "position": {
+            "anchor": "center",
+            "x": 78,
+            "y": 26
+          },
+          "width": 85,
+          "height": 85
+        }
+      ],
+      "choreography": [
+        {
+          "id": "glowp-drift",
+          "target": "glow-p",
+          "preset": "drift",
+          "direction": "down",
+          "distance": 5,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4400
+          }
+        },
+        {
+          "id": "a-in",
+          "target": "line-a",
+          "preset": "line-reveal",
+          "duration": "emphasis",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 300
+          }
+        },
+        {
+          "id": "rule-in",
+          "target": "rule",
+          "preset": "draw-line",
+          "duration": "dramatic",
+          "at": {
+            "after": "a-in",
+            "offsetMs": 0
+          }
+        },
+        {
+          "id": "b-in",
+          "target": "line-b",
+          "preset": "line-reveal",
+          "duration": "emphasis",
+          "at": {
+            "after": "a-in",
+            "offsetMs": 350
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "cut",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "where-tools-invest",
+      "reason": "One picture of the industry's imbalance — evidence, not assertion",
+      "durationMs": 4800,
+      "background": "surface",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "glow-c",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "accent",
+          "opacity": 0.1,
+          "position": {
+            "anchor": "center",
+            "x": 24,
+            "y": 74
+          },
+          "width": 95,
+          "height": 95
+        },
+        {
+          "type": "text",
+          "id": "chart-kicker",
+          "role": "support",
+          "textRole": "kicker",
+          "content": "WHERE TODAY'S TOOLS INVEST",
+          "color": "text-dim",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 22
+          }
+        },
+        {
+          "type": "chart-bar",
+          "id": "invest",
+          "role": "hero",
+          "series": [
+            {
+              "label": "Rendering",
+              "value": 90
+            },
+            {
+              "label": "Templates",
+              "value": 55
+            },
+            {
+              "label": "Direction",
+              "value": 18
+            },
+            {
+              "label": "Critique",
+              "value": 6
+            }
+          ],
+          "highlight": 3,
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 56
+          },
+          "width": 56,
+          "height": 44
+        }
+      ],
+      "choreography": [
+        {
+          "id": "glowc-drift",
+          "target": "glow-c",
+          "preset": "drift",
+          "direction": "right",
+          "distance": 4,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4800
+          }
+        },
+        {
+          "id": "ck-in",
+          "target": "chart-kicker",
+          "preset": "fade-in",
+          "duration": "standard",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 250
+          }
+        },
+        {
+          "id": "bars-in",
+          "target": "invest",
+          "preset": "scale-settle",
+          "duration": "emphasis",
+          "easing": "spring-standard",
+          "at": {
+            "after": "ck-in",
+            "offsetMs": 100
+          },
+          "stagger": {
+            "eachMs": 60,
+            "from": "start"
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "fade",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "the-loop",
+      "reason": "The mechanism in three words — the whole architecture as a mantra",
+      "durationMs": 4600,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "glow-2",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "accent",
+          "opacity": 0.14,
+          "position": {
+            "anchor": "center",
+            "x": 70,
+            "y": 68
+          },
+          "width": 100,
+          "height": 100
+        },
+        {
+          "type": "text",
+          "id": "loop-direct",
+          "role": "hero",
+          "textRole": "display",
+          "content": "Direct.",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 38
+          }
+        },
+        {
+          "type": "text",
+          "id": "loop-critique",
+          "role": "support",
+          "textRole": "display",
+          "content": "Critique.",
+          "color": "primary",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 51
+          }
+        },
+        {
+          "type": "text",
+          "id": "loop-revise",
+          "role": "support",
+          "textRole": "display",
+          "content": "Revise.",
+          "color": "accent",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 64
+          }
+        }
+      ],
+      "choreography": [
+        {
+          "id": "glow2-drift",
+          "target": "glow-2",
+          "preset": "drift",
+          "direction": "left",
+          "distance": 5,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4600
+          }
+        },
+        {
+          "id": "d-in",
+          "target": "loop-direct",
+          "preset": "fade-up",
+          "duration": "emphasis",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 300
+          }
+        },
+        {
+          "id": "c-in",
+          "target": "loop-critique",
+          "preset": "fade-up",
+          "duration": "emphasis",
+          "at": {
+            "after": "d-in",
+            "offsetMs": 150
+          }
+        },
+        {
+          "id": "r-in",
+          "target": "loop-revise",
+          "preset": "fade-up",
+          "duration": "emphasis",
+          "at": {
+            "after": "c-in",
+            "offsetMs": 150
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "fade-through-black",
+        "duration": "emphasis"
+      }
+    },
+    {
+      "id": "the-guarantee",
+      "reason": "Ground the promise in the deterministic machine underneath",
+      "durationMs": 4200,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "text",
+          "id": "gtitle",
+          "role": "hero",
+          "textRole": "title",
+          "content": "Every frame, a pure function of time.",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 46
+          },
+          "maxWidth": 64,
+          "align": "left"
+        },
+        {
+          "type": "text",
+          "id": "gsub",
+          "role": "support",
+          "textRole": "caption",
+          "content": "Validated. Gated. Watched.",
+          "color": "text-dim",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 58
+          },
+          "maxWidth": 56,
+          "align": "left"
+        },
+        {
+          "type": "shape",
+          "id": "glow-g",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.14,
+          "position": {
+            "anchor": "center",
+            "x": 30,
+            "y": 72
+          },
+          "width": 90,
+          "height": 90
+        }
+      ],
+      "choreography": [
+        {
+          "id": "glowg-drift",
+          "target": "glow-g",
+          "preset": "drift",
+          "direction": "up",
+          "distance": 4,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4200
+          }
+        },
+        {
+          "id": "gt-in",
+          "target": "gtitle",
+          "preset": "wipe-reveal",
+          "duration": "dramatic",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 250
+          }
+        },
+        {
+          "id": "gs-in",
+          "target": "gsub",
+          "preset": "fade-up",
+          "duration": "emphasis",
+          "at": {
+            "after": "gt-in",
+            "offsetMs": 100
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "fade",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "close",
+      "reason": "Land the name and the category, then leave — no lingering outro slop",
+      "durationMs": 3400,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "glow-3",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.26,
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 55
+          },
+          "width": 110,
+          "height": 110
+        },
+        {
+          "type": "text",
+          "id": "logo",
+          "role": "hero",
+          "textRole": "display",
+          "content": "Chitra",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 48
+          }
+        },
+        {
+          "type": "text",
+          "id": "tag",
+          "role": "support",
+          "textRole": "caption",
+          "content": "Direct. Gate. Ship.",
+          "color": "text-dim",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 58
+          }
+        },
+        {
+          "type": "text",
+          "id": "cta-extra",
+          "role": "support",
+          "textRole": "caption",
+          "content": "Start free today.",
+          "color": "accent",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 70
+          }
+        }
+      ],
+      "choreography": [
+        {
+          "id": "glow3-in",
+          "target": "glow-3",
+          "preset": "scale-drift",
+          "override": {
+            "reason": "slow ambient swell under the closing card",
+            "durationMs": 4200
+          }
+        },
+        {
+          "id": "logo-in",
+          "target": "logo",
+          "preset": "scale-settle",
+          "duration": "emphasis",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 250
+          }
+        },
+        {
+          "id": "tag-in",
+          "target": "tag",
+          "preset": "fade-in",
+          "duration": "emphasis",
+          "at": {
+            "after": "logo-in",
+            "offsetMs": 120
+          }
+        },
+        {
+          "id": "cta-extra-in",
+          "target": "cta-extra",
+          "preset": "fade-up",
+          "duration": "quick",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 500
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "cut",
+        "duration": "standard"
+      }
+    }
+  ]
+}

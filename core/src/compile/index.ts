@@ -732,13 +732,19 @@ SPECS.forEach(function (s) {
   if (s.stagger) vars.stagger = { each: s.stagger.each, from: s.stagger.from };
   if (s.vars.__countUp) {
     targets.forEach(function (el) {
-      var end = parseFloat(el.getAttribute("data-value"));
-      var format = el.getAttribute("data-format");
-      var dec = parseInt(el.getAttribute("data-decimals"), 10);
+      // The tween targets the element WRAPPER; the stat's data attributes live
+      // on the inner .stat-num node (parseInt(null) → NaN → Intl RangeError
+      // killed the whole runtime; found by the calibration demo base).
+      var stat = el.querySelector(".stat-num") || el;
+      var end = parseFloat(stat.getAttribute("data-value"));
+      var format = stat.getAttribute("data-format");
+      var dec = parseInt(stat.getAttribute("data-decimals"), 10);
+      if (!Number.isFinite(end)) { MISSING.push(s.targets + " (no data-value for count-up)"); return; }
+      if (!Number.isFinite(dec)) dec = 0;
       var proxy = { v: 0 };
       tl.to(proxy, { v: end, duration: s.durationMs / 1000, ease: s.ease, lazy: false,
-        onUpdate: function () { el.textContent = fmtStat(proxy.v, format, dec); } }, s.atMs / 1000);
-      el.textContent = fmtStat(0, format, dec);
+        onUpdate: function () { stat.textContent = fmtStat(proxy.v, format, dec); } }, s.atMs / 1000);
+      stat.textContent = fmtStat(0, format, dec);
     });
     return;
   }

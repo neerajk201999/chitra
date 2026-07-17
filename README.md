@@ -8,7 +8,7 @@ No API keys. No hosted service. Your agent does the reasoning; Chitra does the p
 
 ## Quickest start — hand it to your agent
 
-In **Claude Code, Cursor, Codex, or Gemini CLI**, paste this:
+In **Claude Code, Cursor, Codex, Gemini CLI, or Google Antigravity**, paste this:
 
 > Clone https://github.com/neerajk201999/chitra, run its `scripts/setup.sh`, then read `AGENTS.md` and make me a 20-second launch film for **<your product>**. Iterate until `chitra check` is green.
 

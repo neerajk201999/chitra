@@ -1,0 +1,408 @@
+{
+  "irVersion": "0.1.0",
+  "tier": "score",
+  "meta": {
+    "title": "Ledger — expense automation demo",
+    "register": "product-demo",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "seed": 21,
+    "safeZone": "16x9-standard"
+  },
+  "style": {
+    "name": "ledger-slate",
+    "palette": {
+      "bg": "#0e1116",
+      "surface": "#181d25",
+      "primary": "#3a6ea5",
+      "accent": "#5fb0a5",
+      "text": "#eef1f4",
+      "textDim": "#96a0ac",
+      "onMedia": "#ffffff"
+    },
+    "fonts": {
+      "display": "Space Grotesk",
+      "text": "Inter",
+      "mono": "JetBrains Mono"
+    },
+    "displayWeight": 500,
+    "textWeight": 400,
+    "trackingDisplay": -0.02,
+    "grain": 0.03
+  },
+  "scenes": [
+    {
+      "id": "open",
+      "reason": "Name the problem in one line before showing anything",
+      "durationMs": 4200,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "g1",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.5,
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 50
+          },
+          "width": 135,
+          "height": 135
+        },
+        {
+          "type": "text",
+          "id": "kicker",
+          "role": "support",
+          "textRole": "kicker",
+          "content": "LEDGER",
+          "color": "accent",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 33
+          }
+        },
+        {
+          "type": "text",
+          "id": "claim",
+          "role": "hero",
+          "textRole": "headline",
+          "content": "Expense reports write themselves.",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 49
+          },
+          "maxWidth": 72,
+          "color": "text-dim"
+        }
+      ],
+      "choreography": [
+        {
+          "id": "g1d",
+          "target": "g1",
+          "preset": "drift",
+          "direction": "right",
+          "distance": 5,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4200
+          }
+        },
+        {
+          "id": "k-in",
+          "target": "kicker",
+          "preset": "fade-up",
+          "duration": "standard",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 250
+          }
+        },
+        {
+          "id": "c-in",
+          "target": "claim",
+          "preset": "blur-focus",
+          "duration": "dramatic",
+          "at": {
+            "after": "k-in",
+            "offsetMs": 120
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "fade",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "feature",
+      "reason": "One concrete capability, left-anchored for variety",
+      "durationMs": 4600,
+      "background": "surface",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "g2",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "accent",
+          "opacity": 0.42,
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 50
+          },
+          "width": 135,
+          "height": 135
+        },
+        {
+          "type": "text",
+          "id": "f-head",
+          "role": "hero",
+          "textRole": "headline",
+          "content": "Snap a receipt. Done.",
+          "align": "left",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 44
+          },
+          "maxWidth": 56,
+          "color": "text-dim"
+        },
+        {
+          "type": "shape",
+          "id": "rule",
+          "role": "ambient",
+          "shape": "line",
+          "color": "accent",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 54
+          },
+          "width": 12
+        },
+        {
+          "type": "text",
+          "id": "f-sub",
+          "role": "support",
+          "textRole": "caption",
+          "content": "Category, amount, and policy in one pass.",
+          "color": "text-dim",
+          "align": "left",
+          "position": {
+            "anchor": "left",
+            "x": 12,
+            "y": 60
+          },
+          "maxWidth": 44
+        }
+      ],
+      "choreography": [
+        {
+          "id": "g2d",
+          "target": "g2",
+          "preset": "drift",
+          "direction": "down",
+          "distance": 5,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4600
+          }
+        },
+        {
+          "id": "fh-in",
+          "target": "f-head",
+          "preset": "line-reveal",
+          "duration": "emphasis",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 300
+          }
+        },
+        {
+          "id": "r-in",
+          "target": "rule",
+          "preset": "draw-line",
+          "duration": "dramatic",
+          "at": {
+            "after": "fh-in",
+            "offsetMs": 0
+          }
+        },
+        {
+          "id": "fs-in",
+          "target": "f-sub",
+          "preset": "fade-up",
+          "duration": "emphasis",
+          "at": {
+            "after": "fh-in",
+            "offsetMs": 150
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "cut",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "proof",
+      "reason": "A single measured claim carries the argument",
+      "durationMs": 4800,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "g3",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.44,
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 50
+          },
+          "width": 135,
+          "height": 135
+        },
+        {
+          "type": "stat",
+          "id": "hours",
+          "role": "hero",
+          "value": 11,
+          "format": "plain",
+          "decimals": 0,
+          "label": "hours saved per closer, per month",
+          "color": "accent",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 46
+          }
+        },
+        {
+          "type": "text",
+          "id": "p-sub",
+          "role": "support",
+          "textRole": "caption",
+          "content": "Measured across pilot finance teams.",
+          "color": "text-dim",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 64
+          }
+        }
+      ],
+      "choreography": [
+        {
+          "id": "g3d",
+          "target": "g3",
+          "preset": "drift",
+          "direction": "up",
+          "distance": 5,
+          "override": {
+            "reason": "ambient field travels the full scene length",
+            "durationMs": 4800
+          }
+        },
+        {
+          "id": "h-in",
+          "target": "hours",
+          "preset": "count-up",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 300
+          }
+        },
+        {
+          "id": "ps-in",
+          "target": "p-sub",
+          "preset": "fade-up",
+          "duration": "emphasis",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 700
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "fade",
+        "duration": "standard"
+      }
+    },
+    {
+      "id": "close",
+      "reason": "Name, promise, out — with air",
+      "durationMs": 4400,
+      "background": "bg",
+      "elements": [
+        {
+          "type": "shape",
+          "id": "g4",
+          "role": "ambient",
+          "shape": "gradient-field",
+          "color": "primary",
+          "opacity": 0.52,
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 50
+          },
+          "width": 135,
+          "height": 135
+        },
+        {
+          "type": "text",
+          "id": "mark",
+          "role": "hero",
+          "textRole": "display",
+          "content": "Ledger",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 47
+          },
+          "color": "text-dim"
+        },
+        {
+          "type": "text",
+          "id": "tag",
+          "role": "support",
+          "textRole": "caption",
+          "content": "Close the books, not your evenings.",
+          "color": "text-dim",
+          "position": {
+            "anchor": "center",
+            "x": 50,
+            "y": 58
+          }
+        }
+      ],
+      "choreography": [
+        {
+          "id": "g4s",
+          "target": "g4",
+          "preset": "scale-drift",
+          "override": {
+            "reason": "slow ambient swell under the closing card",
+            "durationMs": 4400
+          }
+        },
+        {
+          "id": "m-in",
+          "target": "mark",
+          "preset": "scale-settle",
+          "duration": "emphasis",
+          "easing": "spring-standard",
+          "at": {
+            "after": "scene-start",
+            "offsetMs": 250
+          }
+        },
+        {
+          "id": "t-in",
+          "target": "tag",
+          "preset": "fade-in",
+          "duration": "emphasis",
+          "at": {
+            "after": "m-in",
+            "offsetMs": 120
+          }
+        }
+      ],
+      "transitionOut": {
+        "type": "cut",
+        "duration": "standard"
+      }
+    }
+  ]
+}

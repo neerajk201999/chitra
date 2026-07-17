@@ -1,43 +1,182 @@
 {
-  "$comment": "Ground-truth labels for the critic calibration cases. A critic run is scored per README.md. Labels were authored with the cases (author-label bias is documented); replace with independent human labels before publishing agreement numbers.",
+  "$comment": "Ground-truth labels for the critic calibration cases. A critic run is scored per README.md. Labels were authored with the cases (author-label bias is documented); replace with independent human labels before publishing agreement numbers. Expanded 2026-07-17 from 4 to 12 cases across all three registers (two controls). Still author-labelled.",
   "cases": {
     "control-clean": {
-      "expectedVerdict": ["ship", "revise"],
+      "expectedVerdict": [
+        "ship",
+        "revise"
+      ],
       "mustFind": [],
-      "mustNotFind": ["any P1"],
+      "mustNotFind": [
+        "any P1"
+      ],
       "maxFindings": 3,
       "rationale": "Shipped flagship. A calibrated critic may file minor P2/P3 polish notes but no blockers; more than 3 findings on the control indicates over-triggering."
     },
     "uniform-monotony": {
-      "expectedVerdict": ["revise"],
+      "expectedVerdict": [
+        "revise"
+      ],
       "mustFind": [
-        { "dimension": "motion", "severityAtLeast": "P2", "gist": "every entrance is the same centered fade; rhythm is metronomic/monotonous" }
+        {
+          "dimension": "motion",
+          "severityAtLeast": "P2",
+          "gist": "every entrance is the same centered fade; rhythm is metronomic/monotonous"
+        }
       ],
       "mustNotFind": [],
       "rationale": "Deterministic gates pass (durations alternate); the defect is aesthetic uniformity across the film."
     },
     "slop-aesthetic": {
-      "expectedVerdict": ["revise", "redirect"],
+      "expectedVerdict": [
+        "revise",
+        "redirect"
+      ],
       "mustFind": [
-        { "dimension": "slop", "severityAtLeast": "P1", "gist": "category-guessable purple-glow AI aesthetic (two-altitude first-order fail)" },
-        { "dimension": "slop|typography", "severityAtLeast": "P2", "gist": "emoji used as design elements in display copy" }
+        {
+          "dimension": "slop",
+          "severityAtLeast": "P1",
+          "gist": "category-guessable purple-glow AI aesthetic (two-altitude first-order fail)"
+        },
+        {
+          "dimension": "slop|typography",
+          "severityAtLeast": "P2",
+          "gist": "emoji used as design elements in display copy"
+        }
       ],
       "mustNotFind": [],
       "rationale": "The look is the #1 named tell in MO-SLOP; a critic that shrugs here is not usable."
     },
     "broken-hierarchy": {
-      "expectedVerdict": ["revise"],
+      "expectedVerdict": [
+        "revise"
+      ],
       "mustFind": [
-        { "dimension": "intent|composition", "severityAtLeast": "P1", "gist": "declared hero moment (the chart) is visually subordinate; decorative glow dominates the frame" }
+        {
+          "dimension": "intent|composition",
+          "severityAtLeast": "P1",
+          "gist": "declared hero moment (the chart) is visually subordinate; decorative glow dominates the frame"
+        }
       ],
       "mustNotFind": [],
-      "rationale": "Requires reading direction.json and comparing against the render — the intent-match capability specifically."
+      "rationale": "Requires reading direction.json and comparing against the render \u2014 the intent-match capability specifically."
+    },
+    "tone-mismatch": {
+      "expectedVerdict": [
+        "revise",
+        "redirect"
+      ],
+      "mustFind": [
+        {
+          "dimension": "direction|color|tone",
+          "severityAtLeast": "P1",
+          "gist": "emotional register contradiction: private-wealth gravitas copy in a candy palette with bouncy springs"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "Every gate passes; the film's feeling contradicts its words. CC-COL-1 (palette is emotion) + CC-NARR-5 (arc is deliberate)."
+    },
+    "color-soup": {
+      "expectedVerdict": [
+        "revise"
+      ],
+      "mustFind": [
+        {
+          "dimension": "color",
+          "severityAtLeast": "P2",
+          "gist": "olive-lime accent clashes with warm terracotta; decorative gradients dominate \u2014 palette harmony failure despite legal contrast"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "WCAG passes everywhere; harmony is not measurable by contrast ratio. CC-COL-1/2."
+    },
+    "rushed-close": {
+      "expectedVerdict": [
+        "revise"
+      ],
+      "mustFind": [
+        {
+          "dimension": "pacing|rhythm",
+          "severityAtLeast": "P2",
+          "gist": "the close is crammed (logo + tag + CTA in one short beat) \u2014 the film ends without air"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "Sits just above the CC-RHY-4 duration gate; the felt problem is density, not length alone."
+    },
+    "dead-center-parade": {
+      "expectedVerdict": [
+        "revise"
+      ],
+      "mustFind": [
+        {
+          "dimension": "composition",
+          "severityAtLeast": "P2",
+          "gist": "every scene is a dead-centered poster; no compositional variety or negative-space intent"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "MO-EDIT-3 passes via palette/scale axes; the eye still sees a centered parade. CC-CAM-3/CC-COMP-3."
+    },
+    "social-whiplash": {
+      "expectedVerdict": [
+        "revise"
+      ],
+      "mustFind": [
+        {
+          "dimension": "motion|continuity",
+          "severityAtLeast": "P2",
+          "gist": "entrances reverse screen direction every beat with no narrative reason \u2014 whiplash continuity"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "MO-CHOR-4 is draft/ungated; only a critic can call directional chaos."
+    },
+    "control-premium": {
+      "expectedVerdict": [
+        "ship",
+        "revise"
+      ],
+      "mustFind": [],
+      "mustNotFind": [
+        "any P1"
+      ],
+      "maxFindings": 3,
+      "rationale": "Second control, product-demo register. Guards against over-triggering outside brand-film."
+    },
+    "wallpaper-drift": {
+      "expectedVerdict": [
+        "revise"
+      ],
+      "mustFind": [
+        {
+          "dimension": "hierarchy|color",
+          "severityAtLeast": "P2",
+          "gist": "ambient glows dominate while content is dim and small \u2014 screensaver, not a product film"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "Brightness spent on decoration, starved on the hero \u2014 CC-COL-3 inverted; CC-NARR-3."
+    },
+    "caption-carpet": {
+      "expectedVerdict": [
+        "revise"
+      ],
+      "mustFind": [
+        {
+          "dimension": "composition|typography|density",
+          "severityAtLeast": "P2",
+          "gist": "three competing badge captions in every scene \u2014 no visual rest, nothing leads the eye"
+        }
+      ],
+      "mustNotFind": [],
+      "rationale": "All positions/sizes legal; the failure is density and divided attention. CC-COMP-3, CC-TYPE-4."
     }
   },
   "scoring": {
-    "verdictMatch": "critic verdict ∈ expectedVerdict",
+    "verdictMatch": "critic verdict \u2208 expectedVerdict",
     "findingHit": "a finding whose dimension matches and whose observation covers the gist (semantic match, judged by the scorer)",
     "falsePositive": "any P1 finding on control-clean, or any finding contradicting a mustNotFind",
-    "report": "verdict matches x/4 · mustFind hits y/4 · false positives z — record per run in runs/"
+    "report": "verdict matches x/4 \u00b7 mustFind hits y/4 \u00b7 false positives z \u2014 record per run in runs/"
   }
 }
