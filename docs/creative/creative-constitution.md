@@ -14,6 +14,37 @@ sessions inherit the taste instead of relearning it.
 > must answer *why does this exist, why now, why this movement?* If the honest
 > answer is "it looked nice" or "to fill time," it is slop. Cut it.
 
+## 0. Concept philosophy (CC-CONC) — *before everything else*
+
+> Amended 2026-07-17 after an owner rejection: a gate-green film was still
+> "very normal." Mechanics-legal is the floor, not the film. (ADR-0013)
+
+- **CC-CONC-1 — No film without a conceit.** One sentence naming the visual or
+  motion mechanic that carries the film and belongs to *this* brief. "Dark and
+  premium" is a treatment; "the film critiques itself on screen" is a conceit.
+  Declared in the Direction (`conceit`); no conceit, no score.
+- **CC-CONC-2 — Divergence before convergence.** Generate ≥3 genuinely different
+  conceits and kill adversarially. The first idea is the training-data mode —
+  presumed slop; it must beat alternatives, never win by default.
+- **CC-CONC-3 — The guessability kill.** If a competent stranger could predict
+  the treatment from the category alone, kill it before scoring. (The critique
+  loop's two-altitude test, moved to generation time.)
+- **CC-CONC-4 — The no-words test.** Mute all copy: the film must still
+  communicate its change or feeling through image and motion alone. Words
+  sharpen a film that already speaks; they must never be the film.
+- **CC-CONC-6 — Irony doesn't survive first contact.** *(Amended 2026-07-18
+  after a second owner rejection.)* A conceit built on showing badness on
+  purpose (parody, before/after, "the film critiques itself") fails with any
+  viewer who lacks the director's commentary: they just see the badness. The
+  frame a viewer screenshots must be a frame you'd defend with no caption. If
+  the conceit needs to be explained to land, it is a P1 concept failure —
+  self-reference and deliberate slop are refused as opening material.
+- **CC-CONC-5 — Defaults are earned.** House styles, glow fields, fade-ups,
+  centered display type are fallback *vocabulary in service of a conceit* —
+  never the concept. A scene fully described by "house style + glow + fade-up +
+  centered type" needs a conceit-tied reason or a re-score. Our own defaults are
+  a slop attractor the moment they answer an open brief by themselves.
+
 ## 1. Narrative philosophy (CC-NARR)
 
 - **CC-NARR-1 — One idea per film.** A launch film sells a single feeling, not a
@@ -92,6 +123,9 @@ sessions inherit the taste instead of relearning it.
   like the first on purpose.
 
 ## 8. How this becomes measurable (the path from taste to gate)
+
+> The full concept-by-concept formalization (definition → proxies → subjective
+> remainder → evaluation) lives in [creative-systems.md](creative-systems.md).
 
 Each principle above is a hypothesis about quality. The Chitra method: state it,
 find a deterministic or VLM-scored proxy, calibrate against labelled examples,

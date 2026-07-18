@@ -28,13 +28,17 @@ An evidence directory (`contact-sheet.png`, `hero-*.png`, `cut-strips.png`), opt
 
 **8 · Intent match** (if direction.json provided). For each scene: does the render deliver its `shotIntent`? Does the declared `heroMoment` actually peak visually?
 
+**9 · Concept (ADR-0013).** Is there a discernible conceit — one visual/motion idea carrying the film — or only a treatment? Run the no-words test on the contact sheet: cover the copy; does the imagery still tell the change/feeling? Would a viewer remember one specific image tomorrow? A film that is only well-set words on a backdrop = P1 on concept, verdict at best `revise`, with a named conceit direction. If direction.json declares a `conceit`, judge whether the render *delivers* it, scene by scene.
+
+**Aesthetic subdimensions** (research foundation — VideoAesBench taxonomy; see docs/research/reference-compendium.md): when judging dimensions 2–6, tag findings against the finer axes where useful — composition, color harmony, lighting, motion smoothness/expressiveness, visual-subject appeal, narrative coherence. Calibrated model-scoring of these arrives with ChitraBench; until then they are your checklist, and every finding must still cite something visible in the evidence, framed causally (what visual fact → what quality failure), following MVQA-68K's causal-annotation format.
+
 ## Output format
 
 ```json
 { "verdict": "ship | revise | redirect",
   "summary": "<one honest sentence>",
   "findings": [ { "scene": "...", "irPath": "scenes[2].elements[1]", "severity": "P1|P2|P3",
-                  "dimension": "composition|typography|color|motion|cuts|slop|intent",
+                  "dimension": "composition|typography|color|motion|cuts|slop|intent|concept",
                   "observation": "<what you saw>", "fix": "<one concrete change>" } ] }
 ```
 

@@ -44,6 +44,10 @@ export const Direction = z.object({
   title: z.string().min(1),
   register,
   logline: z.string().min(10),
+  /** ADR-0013: the one-sentence visual/motion mechanic that carries the film
+   *  and could not be transplanted to a generic brief (CC-CONC-1). Optional in
+   *  schema for back-compat; the create-video skill requires it for films ≥5s. */
+  conceit: z.string().min(20).optional(),
   narrativeArc: z.string().min(20), // setup → tension → peak → release
   tone: z.array(z.string()).min(1).max(5),
   audience: z.string().min(4),

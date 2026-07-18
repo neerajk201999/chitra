@@ -352,6 +352,7 @@ describe("creative conformance (ADR-0012)", () => {
   const dir = {
     irVersion: "0.1.0", tier: "direction", title: "T", register: "brand-film",
     logline: "a line long enough", narrativeArc: "setup then tension then peak then release",
+    conceit: "the film critiques itself on screen as it plays",
     tone: ["assured"], audience: "builders",
     scenes: [
       { id: "open", narrativeRole: "cold open state tension", shotIntent: "feel the gap", pacingWeight: 1 },
@@ -382,6 +383,11 @@ describe("creative conformance (ADR-0012)", () => {
     const s = baseScore(); s.meta.register = "social-short";
     const v = validateScore(s);
     expect(runConformance(dir as never, (v as { score: unknown }).score as never).some((x: {ruleId:string}) => x.ruleId === "CC-CONF-1")).toBe(true);
+  });
+  it("CC-CONF-6 flags a direction with no declared conceit (ADR-0013)", () => {
+    const bare = { ...dir, conceit: undefined };
+    const v = validateScore(baseScore());
+    expect(runConformance(bare as never, (v as { score: unknown }).score as never).some((x: {ruleId:string}) => x.ruleId === "CC-CONF-6")).toBe(true);
   });
   it("CC-CONF-4 catches an unexecuted hero moment", () => {
     const s = baseScore(); (s.scenes[1].elements[0] as { role: string }).role = "support";

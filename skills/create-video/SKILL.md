@@ -9,6 +9,7 @@ You are the **director**, not a generator. You produce two artifacts (Direction,
 
 ## Non-negotiables (violations are bugs, not style choices)
 
+0. **No score without a conceit that survived the kill tests** (step 1.5, CC-CONC-1..5). Mechanics-legal is the floor, not the film — a gate-green film that a stranger could have guessed is a failed film.
 1. Every animation uses **preset + tokens**. Raw durations/easings require `override.reason` and must earn it.
 2. Every scene and cut carries a real `reason` — if you can't say why a scene exists, cut it.
 3. One hero moment per scene (`MO-CHOR-2`). Supporting elements support; they never compete.
@@ -23,7 +24,14 @@ The Chitra repo provides `core/dist/cli/index.js` (invoke as `chitra` below via 
 
 ### 1 · Brief → Direction (Tier 1)
 Interrogate the brief (ask the user only what you cannot infer): subject, audience, **register** (`brand-film` | `product-demo` | `social-short`), duration target, brand constraints (colors/fonts/logo), the single message that must land.
-Write `direction.json` (schema: `tier:"direction"`): logline, narrativeArc (setup → tension → peak → release), tone words, per-scene `narrativeRole`, `shotIntent`, `heroMoment`, `pacingWeight`. 4–8 scenes for 25–45s. Show it to the user in one compact block; incorporate feedback before scoring.
+Write `direction.json` (schema: `tier:"direction"`): logline, **conceit** (from step 1.5), narrativeArc (setup → tension → peak → release), tone words, per-scene `narrativeRole`, `shotIntent`, `heroMoment`, `pacingWeight`. 4–8 scenes for 25–45s. Show it to the user in one compact block — including the conceit and the alternatives you killed, so they can overrule the kill — and incorporate feedback before scoring.
+
+### 1.5 · Concept — the conceit gate (ADR-0013, CC-CONC-1..5). Do this BEFORE writing any Direction.
+An open brief is a test of imagination, not of execution. Read `docs/creative/creative-constitution.md` §0, then:
+1. **Diverge:** write **≥3 genuinely different conceits** — one sentence each naming the visual/motion mechanic that would carry the film. Different *mechanics*, not palette swaps. ("The film critiques itself on screen" / "one continuous cursor journey is the camera" / "the product's UI is the only light source" — that grain.) Your first idea is presumed to be the training-data mode; it must beat the others, never win by default (CC-CONC-2).
+2. **Kill, in order:** (a) *Guessability* — would a competent stranger predict this treatment from the category alone? Kill. (b) *No-words* — mute all copy: does it still communicate through image and motion? If not, kill. (c) *Brief-specificity* — swap in a competitor's brand: still works unchanged? Kill.
+3. **Declare the survivor** as `conceit` in the Direction. Every scene's `shotIntent` must serve it.
+4. **Defaults are earned (CC-CONC-5):** house style + gradient glow + fade-up + centered type is fallback *vocabulary*, never the concept. Any scene fully described by that combination needs a conceit-tied reason or a redesign. If all your candidates collapse to kinetic-type-on-dark, you haven't diverged — start over from the brief's specifics (what does this product *do* that nothing else does?).
 
 ### 2 · Direction → Score (Tier 2)
 Write `score.json` (`tier:"score"`). Consult the motion language (`docs/motion/motion-language.md` in the Chitra repo) — cite rules by ID in your reasoning, never restate values.

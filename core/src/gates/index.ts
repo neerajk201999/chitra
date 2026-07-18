@@ -638,6 +638,12 @@ export function runConformance(direction: DirectionT, score: ScoreT): Finding[] 
       f.push({ ruleId: "CC-CONF-5", severity: "P3", path: `scenes[${score.scenes.indexOf(peakScene)}].durationMs`, message: `Beat "${peak.id}" is the pacing peak (weight ${peak.pacingWeight}) but is among the shortest scenes — the emphasized moment isn't getting air (CC-RHY-2)` });
   }
 
+  // CC-CONF-6 (ADR-0013, CC-CONC-1 proxy): a Direction without a declared
+  // conceit is executing a treatment, not an idea. Advisory — the conceit's
+  // quality is critic territory; its absence is mechanical.
+  if (!direction.conceit)
+    f.push({ ruleId: "CC-CONF-6", severity: "P2", path: "direction.conceit", message: `Direction declares no conceit — name the one visual/motion mechanic that carries this film (CC-CONC-1); "dark and premium" is a treatment, not a conceit` });
+
   return f;
 }
 

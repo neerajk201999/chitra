@@ -1,6 +1,34 @@
 # Roadmap — MVP to v1.0
 
-**Status (2026-07-16): M0 ✅ · M1 ✅ · M2 partial · M3 near-complete (npm-published, one-command onboarding, audit blockers fixed; outside-tester exit gate pending) · M4 (Creative Intelligence) STARTED.** See [known-issues.md](known-issues.md) for the honest ledger.
+**Status (2026-07-18): M0 ✅ · M1 ✅ · M2 partial · M3 near-complete · M4 (Creative Intelligence) in progress — now governed by the six-phase architect program below.** See [known-issues.md](known-issues.md) for the honest ledger.
+
+> **The architect program (owner directive, 2026-07-18).** Standing operating
+> plan; every task must serve a phase. Phase 1 ✅ [capability-matrix.md](../research/capability-matrix.md)
+> (verified, not assumed — supersedes prior parity claims) · Phase 3 ✅
+> [user-workflows.md](../research/user-workflows.md) (evidence: revision loops
+> are pain #1 → the critique loop is the #1 feature; "AI drafts, human directs"
+> is a standing design constraint — no silent creative decisions) · Phase 5
+> started: [creative-systems.md](../creative/creative-systems.md) (all 12
+> creative concepts formalized: definition → proxies → subjective remainder →
+> evaluation) + ADR-0013 conceit gate (CC-CONC-1..6, CC-CONF-6, `conceit` in
+> the Direction IR).
+>
+> **Phase 2 — foundational gaps, in priority order (from the matrix):**
+> 1. `chitra preview` — scrub the compiled HTML timeline in a browser (the
+>    compile target is already seekable; this closes the human-review gap).
+> 2. `caption` element with word timing — designed, gate-checked captions.
+> 3. Narration/TTS timeline — provider interface (ElevenLabs first), word
+>    timestamps as first-class timing anchors (`at.onWord`).
+> 4. Curated transition breadth — wipe/slide (+ one shader class), each mapped
+>    to a CC-CAM/CC-RHY meaning.
+> 5. Brand ingestion pulled forward from M5 — URL/repo → tokens incl.
+>    `motionPersonality` (creative-systems §11).
+>
+> **Phase 4 — differentiation (only after Phase 2):** multi-aspect re-layout
+> (one Score → 16:9/9:16/1:1, gated); pr-to-video/changelog skill (video-CI —
+> the wedge); living motion brand (Style Memory). **Phase 6 — continuous:**
+> camera block for 2D IR and the four queued tractable proxies
+> (creative-systems "standing gaps") are the current architecture debts.
 
 > **Course correction (2026-07-16, ADR-0012).** Two outside reviews + our own VISION confirmed a drift: ADR-0006→0011 were all renderer/expressiveness features (media, video, figures, particles, 3D, audio) while the creative-intelligence layer VISION calls "the product" (Direction → Design → taste) stayed unbuilt and the Direction tier stayed orphaned. **Renderer is now declared feature-complete unless a concrete target film exposes a specific missing capability.** Center of gravity shifts to M4. Honest self-scoring: Rendering ~90%, Determinism ~100%, Motion IR ~90%, Quality gates ~80% (leaks — see known-issues), **Creative Direction ~20%, Narrative ~10%, Taste model ~20%, Storyboarding ~10%, Brand ~10%.** The low numbers are the whole game now.
 

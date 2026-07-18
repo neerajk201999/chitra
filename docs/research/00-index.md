@@ -20,3 +20,13 @@ Immutable, dated snapshots (2026-07-14). Conclusions drawn from these live in AD
 4. **Taste is encodable.** Apple springs, Material tokens, Linear/Kowalski rules, Impeccable's two-altitude slop test, HyperFrames' house styles — concrete, tokenizable, testable.
 5. **The moat is the benchmark.** No VBench-for-motion-design exists. Whoever defines the measurement defines "best."
 - [render-stack-frontier.md](render-stack-frontier.md) — 2026 renderer survey: frame pre-extraction (HeyGen/HyperFrames), Replit's clock-lying WebCodecs pipeline, BeginFrame mode, music sourcing norms (Remotion @remotion/sfx, ElevenLabs text-to-music).
+
+## 2026-07-18 architect-program pass (verified, supersedes stale parity claims)
+
+| Report | Subject | Role | One-line verdict |
+|---|---|---|---|
+| [capability-matrix.md](capability-matrix.md) | Remotion 4.0.x, HyperFrames, EditFrame, video-use, Replit Video | Phase-1 audit | 22-row adopt/improve/replace/omit matrix; nobody attacks our core (quality loop, typed creative IR, determinism); foundational gaps are few + cheap (preview, captions, narration, transitions, brand ingestion) |
+| [user-workflows.md](user-workflows.md) | How launch/demo/social video is really made | Phase-3 demand | The wedge = the $2.5k–$50k / 20–100h launch-film tier at DIY turnaround; revision loops are pain #1 → the critique loop IS the product; "AI drafts, human directs" (no silent creative decisions) |
+| [../creative/creative-systems.md](../creative/creative-systems.md) | 12 creative concepts as engineering systems | Phase-5 formalization | Each concept: definition → measurable proxies (mapped to enforced rule IDs) → subjective remainder → evaluation; exposes standing gaps (no camera block in 2D IR, motionPersonality unencoded) |
+
+**Verified corrections to earlier snapshots:** Remotion 5.0 is NOT released (4.0.490 latest); Remotion is source-available with an anti-fork clause (ideas only, never code) and has moved its media layer to MIT Mediabunny (the sanctioned WebCodecs substrate); HyperFrames is HeyGen's Apache-2.0 project (~36k★), not YC; the YC lineage belongs to video-use (browser-use); EditFrame pivoted to closed-source HTML web-components with near-zero adoption signal.

@@ -9,3 +9,6 @@ Archive.zip
 benchmarks/critic-calibration/cases/*/.chitra-cache/
 benchmarks/critic-calibration/cases/*/.chitra-page.html
 benchmarks/critic-calibration/cases/*/evidence/
+
+# root-level scratch renders (thesis/verdict demos)
+/out/
