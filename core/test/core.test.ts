@@ -229,6 +229,24 @@ describe("figures & interaction choreography (ADR-0008)", () => {
     expect(clean).toContain("var(--surface)");
     expect(clean).toContain("<button");
   });
+  it("namespaces internally-referenced SVG ids but leaves choreography-target ids alone", async () => {
+    const { namespaceFragmentIds } = await import("../src/compile/index.js");
+    const frag = `<svg><defs><clipPath id="clip"><circle/></clipPath><filter id="glow"></filter></defs>
+      <g clip-path="url(#clip)"><path filter="url(#glow)" id="send"/></g></svg>`;
+    const out = namespaceFragmentIds(frag, "scene1-fig");
+    // referenced ids get namespaced (both declaration and reference)
+    expect(out).toContain('id="scene1-fig-clip"');
+    expect(out).toContain("url(#scene1-fig-clip)");
+    expect(out).toContain("url(#scene1-fig-glow)");
+    // 'send' is a choreography target (never url()/href-referenced) → untouched
+    expect(out).toContain('id="send"');
+    expect(out).not.toContain("scene1-fig-send");
+    // idempotent-ish: two instances get distinct namespaces (no collision)
+    const a = namespaceFragmentIds(frag, "sA-f");
+    const b = namespaceFragmentIds(frag, "sB-f");
+    expect(a).toContain("url(#sA-f-clip)");
+    expect(b).toContain("url(#sB-f-clip)");
+  });
   it("IR-CUR-1 gates waypoint misuse and wrong-kind targets", () => {
     const s = validFixture();
     s.scenes[0].elements.push({ type: "cursor", id: "cur" } as never);

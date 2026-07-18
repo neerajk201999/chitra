@@ -21,3 +21,18 @@ Honest ledger. Each item is scheduled (milestone) or explicitly accepted. Fixed 
 - **A5 — audio loudness. FIXED (measurement).** Final mux is measured with ebur128 and warns when outside −14 LUFS / −1.5 dBTP. Warning, not hard block (short material drifts).
 - **A9 — orphaned Chrome on Ctrl-C. FIXED.** SIGINT/SIGTERM close all live browsers. Also: `../` path traversal now rejected in all asset refinements.
 - **A6, A7 remain open** (cross-machine determinism CI; independent critic calibration) — tracked as items 6 and 7 above.
+
+## Resolved 2026-07-18 (found recreating the Claude Design film, T1)
+- **Duplicate SVG ids across figure instances. FIXED (compiler).** The film
+  compiles to one page (all scenes present, seek-toggled), so a fragment used
+  more than once emitted duplicate element ids. SVG references (`url(#glow)`,
+  `xlink:href="#clip"`) resolve to the first match document-wide, so the 2nd+
+  instance of a figure silently lost its gradients/clips/filters — content
+  vanished with no gate failure (gates saw a legal, if emptier, frame). A
+  globe figure reused in three scenes rendered fully in scene 1 and as an empty
+  disc in scenes 2–3. Fix: `namespaceFragmentIds()` in the compiler namespaces,
+  per instance, exactly the ids a fragment references internally via
+  `url()`/`href` — leaving choreography-target ids (selected by CSS as
+  `figureId/innerId`, never self-referenced) untouched. Unit-tested; cache v15.
+  *Class of bug this closes: any figure carrying SVG defs was unsafe to reuse.*
+  Follow-up candidate: a gate that flags duplicate raw ids surviving compile.

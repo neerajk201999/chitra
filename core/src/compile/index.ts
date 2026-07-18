@@ -201,6 +201,31 @@ export function sanitizeFragment(html: string): string {
     .replace(/javascript:/gi, "");
 }
 
+/** The whole film compiles to ONE page (all scenes present, toggled by the seek
+ *  clock), so a fragment used more than once puts duplicate element ids in the
+ *  document. SVG references (`url(#glow)`, `xlink:href="#clip"`) resolve to the
+ *  FIRST match document-wide, so the 2nd+ instance of a figure silently loses
+ *  its gradients/clips/filters (content vanishes). Namespace exactly the ids a
+ *  fragment references internally, per instance — leaving choreography-targeted
+ *  ids (selected by CSS, never via url()/href) untouched so `figureId/innerId`
+ *  still resolves. Found the hard way recreating the Claude Design globe. */
+export function namespaceFragmentIds(html: string, prefix: string): string {
+  const referenced = new Set<string>();
+  const refRe = /(?:url\(\s*#|xlink:href\s*=\s*["']#|(?<![a-z])href\s*=\s*["']#)([A-Za-z][\w-]*)/g;
+  for (let m; (m = refRe.exec(html)); ) referenced.add(m[1]);
+  if (referenced.size === 0) return html;
+  let out = html;
+  for (const rawId of referenced) {
+    const id = rawId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const ns = `${prefix}-${rawId}`;
+    out = out
+      .replace(new RegExp(`id\\s*=\\s*("|')${id}\\1`, "g"), `id=$1${ns}$1`)
+      .replace(new RegExp(`url\\(\\s*#${id}\\s*\\)`, "g"), `url(#${ns})`)
+      .replace(new RegExp(`((?:xlink:)?href)\\s*=\\s*("|')#${id}\\2`, "g"), `$1=$2#${ns}$2`);
+  }
+  return out;
+}
+
 /** ADR-0009: deterministic per-formation dot coordinates in element-box percent
  *  (0..100 within the particle element's own box). Pure math → identical every
  *  render. `n` is fixed per element (max of grid cols*rows and count) so a morph
@@ -310,7 +335,7 @@ function renderElement(el: ElementT, score: ScoreT, scale: number, sceneId: stri
       const r = `${(el.radius * Math.min(score.meta.width, score.meta.height)) / 100}px`;
       const file = path.resolve(projectDir, el.src);
       if (!existsSync(file)) throw new Error(`figure fragment not found: ${el.src} (resolved to ${file})`);
-      const fragment = sanitizeFragment(readFileSync(file, "utf8"));
+      const fragment = namespaceFragmentIds(sanitizeFragment(readFileSync(file, "utf8")), `${sceneId}-${el.id}`);
       const shadow = el.shadow ? `box-shadow:0 ${18 * scale}px ${60 * scale}px rgba(0,0,0,0.45);` : "";
       // Token bridge: fragments style themselves ONLY through these variables.
       const vars =
